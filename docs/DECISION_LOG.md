@@ -11,3 +11,11 @@ Cleaned output will prioritize CSV export because CSV is portable, analysis-frie
 ## 2026-07-12 - No Docker in Initial Foundation
 
 DP-0001 will avoid Docker to keep the local development path simple for a portfolio foundation.
+
+## 2026-07-12 - FastAPI and React Foundation
+
+The initial stack uses FastAPI, Pydantic, Pytest, React, TypeScript, Vite, and Vitest. This stack keeps the project understandable, testable, and familiar for a GitHub portfolio.
+
+## 2026-07-12 - Capabilities Metadata Before Processing
+
+DP-0001 exposes a capabilities endpoint before implementing upload or cleaning. The endpoint is intentionally honest: it documents planned formats and rules while stating that processing features are not implemented yet.

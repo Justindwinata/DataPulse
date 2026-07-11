@@ -1,5 +1,7 @@
 # DataPulse Roadmap
 
+DataPulse will grow through small contracts so each stage remains reviewable, testable, and portfolio-friendly.
+
 ## DP-0001 - Project Bootstrap and Product Foundation
 
 - Create repository structure.
@@ -15,6 +17,7 @@
 - Validate file extension, size, and basic content constraints.
 - Store uploaded files temporarily for a cleaning session.
 - Return clear validation errors.
+- Add frontend upload UI with validation feedback.
 
 ## DP-0003 - CSV and Delimited Text Preview
 
@@ -33,9 +36,17 @@
 - Apply deterministic cleaning rules.
 - Track before/after summaries.
 - Keep transformations transparent and user-selected.
+- Add cleaned preview.
 
 ## DP-0006 - Export, Reports, and History
 
 - Export cleaned CSV.
 - Generate professional HTML cleaning reports.
 - Add SQLite-backed cleaning history.
+
+## Later Ideas
+
+- Better type profiling for numeric and date columns.
+- Safer large-file limits and streaming previews.
+- More detailed cleaning report sections.
+- Accessibility and keyboard workflow polish.
