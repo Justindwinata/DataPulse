@@ -13,6 +13,13 @@ from datapulse_api.models.cleaning import (
     TablePreview,
     UploadedFileMetadata,
 )
+from datapulse_api.models.file_upload import (
+    SUPPORTED_UPLOAD_EXTENSIONS,
+    SUPPORTED_UPLOAD_FILE_TYPES,
+    FileUploadValidationResponse,
+    UploadNextStep,
+    UploadValidationStatus,
+)
 
 __all__ = [
     "CleaningIssue",
@@ -26,4 +33,9 @@ __all__ = [
     "SupportedFileType",
     "TablePreview",
     "UploadedFileMetadata",
+    "FileUploadValidationResponse",
+    "SUPPORTED_UPLOAD_EXTENSIONS",
+    "SUPPORTED_UPLOAD_FILE_TYPES",
+    "UploadNextStep",
+    "UploadValidationStatus",
 ]
