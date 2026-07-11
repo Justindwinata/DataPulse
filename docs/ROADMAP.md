@@ -15,9 +15,10 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 
 - Add file upload endpoint.
 - Validate file extension, size, and basic content constraints.
-- Store uploaded files temporarily for a cleaning session.
+- Avoid permanent uploaded file storage.
 - Return clear validation errors.
 - Add frontend upload UI with validation feedback.
+- Status: implemented.
 
 ## DP-0003 - CSV and Delimited Text Preview
 

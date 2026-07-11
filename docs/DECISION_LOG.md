@@ -19,3 +19,11 @@ The initial stack uses FastAPI, Pydantic, Pytest, React, TypeScript, Vite, and V
 ## 2026-07-12 - Capabilities Metadata Before Processing
 
 DP-0001 exposes a capabilities endpoint before implementing upload or cleaning. The endpoint is intentionally honest: it documents planned formats and rules while stating that processing features are not implemented yet.
+
+## 2026-07-12 - Upload Validation Before Parsing
+
+DP-0002 validates only file metadata, extension, and size. It deliberately avoids CSV parsing, Excel sheet inspection, delimiter detection, and header detection so the first intake milestone stays safe and testable.
+
+## 2026-07-12 - No Permanent Uploaded File Storage
+
+Uploaded files are read for validation and not stored permanently. Future contracts may add temporary session handling, but DP-0002 keeps persistence out of scope.

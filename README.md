@@ -4,9 +4,9 @@ DataPulse is a deterministic messy CSV and Excel cleaner studio. It helps users 
 
 DataPulse is not an AI cleaning tool and does not claim perfect automatic cleaning. The product direction is deliberately rule-based: users should be able to see what was detected, choose which transformations to apply, and review what changed.
 
-## DP-0001 Scope
+## Current Scope
 
-DP-0001 establishes the product and engineering foundation:
+DP-0001 established the product and engineering foundation:
 
 - FastAPI backend package with service metadata and `GET /health`
 - `GET /cleaning/capabilities` metadata endpoint
@@ -15,6 +15,19 @@ DP-0001 establishes the product and engineering foundation:
 - Vitest and Pytest tests from the beginning
 - Root Makefile for repeatable local checks
 - Product requirements, architecture notes, roadmap, decision log, and changelog
+
+DP-0002 adds the first real file intake milestone:
+
+- `POST /files/validate-upload` multipart upload validation endpoint
+- Supported upload extensions: `.csv`, `.tsv`, `.txt`, `.xlsx`, and `.xls`
+- 10 MB maximum upload size
+- Empty file rejection
+- Unsupported extension rejection
+- Unsafe filename sanitization in response metadata
+- Frontend upload validation workspace
+- Accepted, rejected, loading, empty, and backend error UI states
+
+Uploaded files are read only for validation metadata and are not stored permanently.
 
 ## Planned Product Flow
 
@@ -31,9 +44,12 @@ DP-0001 establishes the product and engineering foundation:
 
 ## Current Limitations
 
-- No actual file upload yet
+- File upload validation exists, but files are not parsed or stored permanently
 - No CSV parsing yet
 - No Excel parsing yet
+- No delimiter detection yet
+- No header detection yet
+- No raw preview yet
 - No cleaning engine yet
 - No cleaned CSV export yet
 - No HTML report yet
@@ -123,4 +139,22 @@ Capabilities metadata:
 GET /cleaning/capabilities
 ```
 
-The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that upload, parsing, cleaning, export, reports, and history are not implemented in DP-0001.
+Upload validation:
+
+```http
+POST /files/validate-upload
+Content-Type: multipart/form-data
+```
+
+The upload validation endpoint accepts one `file` field and returns structured metadata:
+
+- Original and sanitized filename
+- Detected extension
+- Content type
+- File size
+- Supported/rejected status
+- Validation messages
+- Next step metadata
+- `structure_detection_available: false`
+
+The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.

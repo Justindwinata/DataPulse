@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0001 focuses on clean boundaries and contracts before implementing the cleaning engine.
+DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0002 adds safe upload validation while keeping parsing and cleaning out of scope.
 
 ## Repository Layout
 
@@ -31,12 +31,22 @@ The backend exposes API routes through FastAPI. Current endpoints:
 
 - `GET /health`
 - `GET /cleaning/capabilities`
+- `POST /files/validate-upload`
 
-Domain contracts live under `datapulse_api.models`. Future parsing and cleaning orchestration should live in services rather than route handlers.
+Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
+
+Current upload validation rules:
+
+- Supported extensions: `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`
+- Maximum size: 10 MB
+- Empty files are rejected
+- Unsupported extensions are rejected
+- Unsafe path-like filenames are sanitized for safe display
+- Structure detection is explicitly reported as unavailable in DP-0002
 
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. DP-0001 provides a portfolio-ready product shell that communicates the planned workflow without pretending the full workflow is implemented.
+The frontend is a Vite React application written in TypeScript. DP-0002 provides an upload validation workspace with selected file metadata, validation actions, loading state, accepted/rejected results, and backend error handling. It does not display fake parsing results or cleaned previews.
 
 ## Future Processing Flow
 
@@ -63,6 +73,7 @@ The frontend is a Vite React application written in TypeScript. DP-0001 provides
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0001
+- No deployment in DP-0002
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
+- No permanent upload storage
