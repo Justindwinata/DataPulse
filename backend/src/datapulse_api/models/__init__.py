@@ -20,6 +20,16 @@ from datapulse_api.models.file_upload import (
     UploadNextStep,
     UploadValidationStatus,
 )
+from datapulse_api.models.structure_detection import (
+    DelimiterConfidence,
+    DelimiterDetection,
+    RawTablePreview,
+    StructureDetectionResult,
+    StructureDetectionStatus,
+    StructureNextStep,
+    StructureWarning,
+    StructureWarningSeverity,
+)
 
 __all__ = [
     "CleaningIssue",
@@ -38,4 +48,12 @@ __all__ = [
     "SUPPORTED_UPLOAD_FILE_TYPES",
     "UploadNextStep",
     "UploadValidationStatus",
+    "DelimiterConfidence",
+    "DelimiterDetection",
+    "RawTablePreview",
+    "StructureDetectionResult",
+    "StructureDetectionStatus",
+    "StructureNextStep",
+    "StructureWarning",
+    "StructureWarningSeverity",
 ]
