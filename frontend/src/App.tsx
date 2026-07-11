@@ -5,6 +5,11 @@ import {
   validateUploadFile,
   type FileUploadValidationResponse,
 } from "./api/uploadValidation";
+import {
+  StructureDetectionError,
+  detectFileStructure,
+  type StructureDetectionResult,
+} from "./api/structureDetection";
 
 type ProductSection = {
   title: string;
@@ -35,6 +40,7 @@ const productSections: ProductSection[] = [
 ];
 
 const acceptedFormats = ".csv,.tsv,.txt,.xlsx,.xls";
+const csvLikeExtensions = new Set(["csv", "tsv", "txt"]);
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -50,14 +56,19 @@ function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] =
     useState<FileUploadValidationResponse | null>(null);
+  const [structureResult, setStructureResult] = useState<StructureDetectionResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [structureErrorMessage, setStructureErrorMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
+  const [isDetectingStructure, setIsDetectingStructure] = useState(false);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
     setValidationResult(null);
+    setStructureResult(null);
     setErrorMessage(null);
+    setStructureErrorMessage(null);
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -69,7 +80,9 @@ function App() {
 
     setIsValidating(true);
     setErrorMessage(null);
+    setStructureErrorMessage(null);
     setValidationResult(null);
+    setStructureResult(null);
 
     try {
       setValidationResult(await validateUploadFile(selectedFile));
@@ -84,30 +97,60 @@ function App() {
     }
   };
 
+  const handleDetectStructure = async () => {
+    if (!selectedFile) {
+      setStructureErrorMessage("Select a file before structure detection.");
+      return;
+    }
+
+    setIsDetectingStructure(true);
+    setStructureErrorMessage(null);
+    setStructureResult(null);
+
+    try {
+      setStructureResult(await detectFileStructure(selectedFile));
+    } catch (error) {
+      setStructureErrorMessage(
+        error instanceof StructureDetectionError
+          ? error.message
+          : "Structure detection failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsDetectingStructure(false);
+    }
+  };
+
+  const canDetectStructure =
+    validationResult?.validation_status === "accepted" &&
+    csvLikeExtensions.has(validationResult.detected_extension);
+  const isExcelUpload =
+    validationResult?.validation_status === "accepted" &&
+    ["xlsx", "xls"].includes(validationResult.detected_extension);
+
   return (
     <main className="app-shell">
       <section className="hero" aria-labelledby="product-title">
         <div className="hero-copy">
-          <p className="eyebrow">File intake validation</p>
+          <p className="eyebrow">CSV structure detection</p>
           <h1 id="product-title">DataPulse</h1>
           <p className="subtitle">Messy CSV & Excel Cleaner Studio</p>
           <p className="description">
-            Upload a tabular file and verify whether it can move forward to future
-            structure detection. DP-0002 validates file metadata only; parsing and
-            cleaning are not implemented yet.
+            Upload a CSV-like file, validate it, detect delimiter and header shape,
+            then inspect a bounded raw preview. Excel parsing and cleaning are still
+            planned for later milestones.
           </p>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0002</span>
-          <strong>Upload validation active</strong>
-          <p>Supported: CSV, TSV, TXT, XLSX, and XLS up to 10 MB. Files are not stored.</p>
+          <span className="status-label">DP-0003</span>
+          <strong>CSV-like preview active</strong>
+          <p>Structure detection supports CSV, TSV, and TXT. Excel is validated only.</p>
         </div>
       </section>
 
       <section className="upload-workspace" aria-labelledby="upload-title">
         <div className="section-heading">
-          <p className="eyebrow">Validation workspace</p>
-          <h2 id="upload-title">Check a file before structure detection</h2>
+          <p className="eyebrow">Detection workspace</p>
+          <h2 id="upload-title">Validate a file and inspect its raw structure</h2>
         </div>
 
         <div className="workspace-grid">
@@ -161,7 +204,8 @@ function App() {
                 <h3>Validation result will appear here</h3>
                 <p>
                   DataPulse checks extension, size, and upload metadata. It does not parse
-                  rows, detect delimiters, read Excel sheets, or clean data in this milestone.
+                  rows until structure detection is requested. It does not clean data,
+                  export CSV files, or generate reports in this milestone.
                 </p>
               </div>
             )}
@@ -205,13 +249,139 @@ function App() {
                 </ul>
                 <p className="future-note">
                   Structure detection available:{" "}
-                  {validationResult.structure_detection_available ? "yes" : "not yet"}.
-                  Parsing, previews, cleaning, exports, and reports come later.
+                  {canDetectStructure ? "yes for CSV-like files" : "not for this file yet"}.
+                  Cleaning, exports, reports, and saved history come later.
                 </p>
+                {canDetectStructure && (
+                  <button
+                    className="secondary-action"
+                    type="button"
+                    disabled={isDetectingStructure}
+                    onClick={handleDetectStructure}
+                  >
+                    {isDetectingStructure ? "Detecting structure..." : "Detect Structure"}
+                  </button>
+                )}
+                {isExcelUpload && (
+                  <p className="excel-note">
+                    Excel structure detection is planned for a later milestone.
+                  </p>
+                )}
               </div>
             )}
           </aside>
         </div>
+      </section>
+
+      <section className="structure-workspace" aria-labelledby="structure-title">
+        <div className="section-heading">
+          <p className="eyebrow">Raw preview</p>
+          <h2 id="structure-title">Detected structure result</h2>
+        </div>
+
+        {!structureResult && !structureErrorMessage && (
+          <div className="structure-empty">
+            <h3>No structure result yet</h3>
+            <p>
+              Validate a CSV, TSV, or TXT file, then run structure detection to see
+              delimiter, header, warnings, and a bounded preview.
+            </p>
+          </div>
+        )}
+
+        {structureErrorMessage && (
+          <div className="result-card rejected">
+            <span className="status-label">Error</span>
+            <h3>Structure detection request failed</h3>
+            <p>{structureErrorMessage}</p>
+          </div>
+        )}
+
+        {structureResult && structureResult.structure_status !== "detected" && (
+          <div className="result-card rejected">
+            <span className="status-label">
+              {structureResult.structure_status === "not_implemented" ? "Planned" : "Rejected"}
+            </span>
+            <h3>{structureResult.safe_filename}</h3>
+            {structureResult.warnings.map((warning) => (
+              <p key={warning.code}>{warning.message}</p>
+            ))}
+          </div>
+        )}
+
+        {structureResult && structureResult.structure_status === "detected" && (
+          <div className="structure-result">
+            <div className="summary-grid">
+              <article>
+                <span>Delimiter</span>
+                <strong>{structureResult.delimiter?.delimiter_label ?? "unknown"}</strong>
+                <p>{structureResult.delimiter?.delimiter_confidence ?? "unknown"} confidence</p>
+              </article>
+              <article>
+                <span>Columns</span>
+                <strong>{structureResult.detected_column_count}</strong>
+                <p>{structureResult.has_detected_header ? "Header detected" : "Generated names"}</p>
+              </article>
+              <article>
+                <span>Preview rows</span>
+                <strong>{structureResult.preview_row_count}</strong>
+                <p>{structureResult.sampled_row_count} sampled rows</p>
+              </article>
+              <article>
+                <span>Warnings</span>
+                <strong>{structureResult.warnings.length}</strong>
+                <p>Structure notes found</p>
+              </article>
+            </div>
+
+            {structureResult.warnings.length > 0 && (
+              <div className="warning-panel">
+                <h3>Structure warnings</h3>
+                <ul>
+                  {structureResult.warnings.map((warning) => (
+                    <li key={warning.code}>
+                      <strong>{warning.code}</strong>
+                      <span>{warning.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {structureResult.preview && (
+              <div className="preview-panel">
+                <div className="preview-heading">
+                  <h3>Raw preview</h3>
+                  <p>Preview rows are bounded and normalized for display only.</p>
+                </div>
+                <div className="table-scroll" role="region" aria-label="Raw preview table">
+                  <table>
+                    <thead>
+                      <tr>
+                        {structureResult.preview.columns.map((column) => (
+                          <th key={column}>{column}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {structureResult.preview.rows.map((row, rowIndex) => (
+                        <tr key={`${row.join("|")}-${rowIndex}`}>
+                          {row.map((cell, cellIndex) => (
+                            <td key={`${cellIndex}-${cell}`}>{cell}</td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            <p className="future-note">
+              Next: quality issue detection and cleaning rules will be implemented later.
+            </p>
+          </div>
+        )}
       </section>
 
       <section className="workflow" aria-labelledby="workflow-title">
