@@ -29,6 +29,19 @@ DP-0002 adds the first real file intake milestone:
 
 Uploaded files are read only for validation metadata and are not stored permanently.
 
+DP-0003 adds CSV-like structure detection and raw preview:
+
+- `POST /files/detect-structure` multipart endpoint
+- CSV, TSV, and TXT table-like structure detection
+- Deterministic delimiter detection for comma, semicolon, tab, and pipe
+- Simple header candidate detection
+- Generated column names when no header is detected
+- Bounded raw preview with up to 20 preview rows
+- Structure warnings for inconsistent row widths, empty rows, duplicate headers, missing headers, leading metadata rows, and very small samples
+- Honest Excel limitation response for `.xlsx` and `.xls`
+
+Structure detection reads only a bounded sample for CSV-like files and does not store files permanently.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -45,11 +58,9 @@ Uploaded files are read only for validation metadata and are not stored permanen
 ## Current Limitations
 
 - File upload validation exists, but files are not parsed or stored permanently
-- No CSV parsing yet
-- No Excel parsing yet
-- No delimiter detection yet
-- No header detection yet
-- No raw preview yet
+- CSV/TSV/TXT structure detection and bounded raw preview exist
+- Excel sheet parsing is not implemented yet
+- No full data quality profiling yet
 - No cleaning engine yet
 - No cleaned CSV export yet
 - No HTML report yet
@@ -156,5 +167,14 @@ The upload validation endpoint accepts one `file` field and returns structured m
 - Validation messages
 - Next step metadata
 - `structure_detection_available: false`
+
+CSV-like structure detection:
+
+```http
+POST /files/detect-structure
+Content-Type: multipart/form-data
+```
+
+The structure detection endpoint accepts one `file` field. It supports `.csv`, `.tsv`, and `.txt` files, returns delimiter/header/column metadata, bounded preview rows, and structured warnings. Excel files return an honest later-milestone message instead of a fake preview.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.

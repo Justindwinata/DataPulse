@@ -27,3 +27,11 @@ DP-0002 validates only file metadata, extension, and size. It deliberately avoid
 ## 2026-07-12 - No Permanent Uploaded File Storage
 
 Uploaded files are read for validation and not stored permanently. Future contracts may add temporary session handling, but DP-0002 keeps persistence out of scope.
+
+## 2026-07-12 - CSV-Like Structure Detection Before Excel
+
+DP-0003 implements structure detection only for CSV, TSV, and TXT files. Excel files return an explicit later-milestone message because workbook sheet discovery requires a separate implementation path.
+
+## 2026-07-12 - Bounded Preview Over Full-File Parsing
+
+Structure detection reads bounded samples and returns capped preview rows. Full-file row counts, profiling, cleaning, and export are deferred to later milestones to avoid overbuilding and unsafe memory behavior.

@@ -25,6 +25,8 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Detect CSV, TSV, and table-like text structure.
 - Preview raw rows safely.
 - Detect headers, delimiters, row widths, and empty rows.
+- Return structured warnings and raw preview metadata.
+- Status: implemented for CSV, TSV, and TXT.
 
 ## DP-0004 - Excel Sheet Discovery
 
