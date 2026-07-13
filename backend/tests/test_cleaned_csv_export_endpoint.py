@@ -97,6 +97,25 @@ def test_export_rejects_empty_file() -> None:
     assert response.json()["detail"]["code"] == "empty_file"
 
 
+def test_export_uses_safe_filename_for_unsafe_upload_name() -> None:
+    response = post_export("../../Messy Sales!.csv", b"name\nAri\n", "text/csv", [])
+
+    assert response.status_code == 200
+    assert response.headers["content-disposition"] == 'attachment; filename="Messy_Sales_cleaned.csv"'
+
+
+def test_export_accepts_repeated_rule_form_fields() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/files/export-cleaned-csv",
+        files={"file": ("messy.csv", b"name,empty\n Ari ,\n", "text/csv")},
+        data={"rules": ["trim_whitespace", "drop_empty_columns"]},
+    )
+
+    assert response.status_code == 200
+    assert response.text == "name\nAri\n"
+
+
 def test_existing_cleaning_preview_endpoint_still_works() -> None:
     client = TestClient(app)
     response = client.post(

@@ -143,3 +143,26 @@ def test_csv_escaping_for_commas_quotes_and_newlines() -> None:
     )
 
     assert text == 'name,note\n"Ari, D","Line ""one""\nLine two"\n'
+
+
+def test_no_rules_selected_exports_detected_table_deterministically() -> None:
+    text = export_text("no-rules.csv", b"name,amount\n Ari ,10\n", [])
+
+    assert text == "name,amount\n Ari ,10\n"
+
+
+def test_safe_export_filename_from_unsafe_source_name() -> None:
+    result = export_cleaned_csv(
+        filename="../../Messy Sales!.csv",
+        content_type="text/csv",
+        content=b"name\nAri\n",
+        rules=[],
+    )
+
+    assert result.filename == "Messy_Sales_cleaned.csv"
+
+
+def test_export_handles_all_columns_dropped() -> None:
+    text = export_text("empty-columns.csv", b"left,right\n,\n", [CleaningRuleCode.DROP_EMPTY_COLUMNS])
+
+    assert text == "\n\n"
