@@ -20,6 +20,16 @@ from datapulse_api.models.file_upload import (
     UploadNextStep,
     UploadValidationStatus,
 )
+from datapulse_api.models.quality import (
+    ColumnProfile,
+    DataQualityIssue,
+    DataQualityResult,
+    InferredColumnType,
+    IssueSeverity,
+    QualityNextStep,
+    QualityStatus,
+    SeverityCounts,
+)
 from datapulse_api.models.structure_detection import (
     DelimiterConfidence,
     DelimiterDetection,
@@ -50,6 +60,14 @@ __all__ = [
     "SUPPORTED_UPLOAD_FILE_TYPES",
     "UploadNextStep",
     "UploadValidationStatus",
+    "ColumnProfile",
+    "DataQualityIssue",
+    "DataQualityResult",
+    "InferredColumnType",
+    "IssueSeverity",
+    "QualityNextStep",
+    "QualityStatus",
+    "SeverityCounts",
     "DelimiterConfidence",
     "DelimiterDetection",
     "ExcelSheetMetadata",
