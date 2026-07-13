@@ -1,17 +1,38 @@
 from fastapi.testclient import TestClient
+from io import BytesIO
+from openpyxl import Workbook
 
 from datapulse_api.main import app
 
 
-def post_detect(filename: str, content: bytes, content_type: str) -> dict[str, object]:
+def post_detect(
+    filename: str,
+    content: bytes,
+    content_type: str,
+    sheet_name: str | None = None,
+) -> dict[str, object]:
     client = TestClient(app)
+    data = {"sheet_name": sheet_name} if sheet_name is not None else None
     response = client.post(
         "/files/detect-structure",
         files={"file": (filename, content, content_type)},
+        data=data,
     )
 
     assert response.status_code == 200
     return response.json()
+
+
+def make_xlsx() -> bytes:
+    workbook = Workbook()
+    worksheet = workbook.active
+    worksheet.title = "Sales"
+    worksheet.append(["Customer", "Amount"])
+    worksheet.append(["Ari", 1200])
+    workbook.create_sheet("Customers")
+    buffer = BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()
 
 
 def warning_codes(payload: dict[str, object]) -> set[str]:
@@ -44,16 +65,45 @@ def test_detect_structure_accepts_pipe_txt() -> None:
     assert payload["delimiter"]["delimiter_label"] == "pipe"
 
 
-def test_detect_structure_returns_excel_limitation() -> None:
+def test_detect_structure_discovers_excel_sheets() -> None:
     payload = post_detect(
         "workbook.xlsx",
-        b"placeholder workbook bytes",
+        make_xlsx(),
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     )
 
-    assert payload["structure_status"] == "not_implemented"
-    assert payload["next_step"] == "wait_for_excel_support"
-    assert "Excel structure detection" in payload["warnings"][0]["message"]
+    assert payload["structure_status"] == "sheet_selection_required"
+    assert payload["next_step"] == "select_excel_sheet"
+    assert payload["workbook"]["sheet_names"] == ["Sales", "Customers"]
+    assert payload["workbook"]["default_sheet_name"] == "Sales"
+    assert payload["warnings"][0]["code"] == "excel_formatting_not_preserved"
+
+
+def test_detect_structure_previews_selected_excel_sheet() -> None:
+    payload = post_detect(
+        "workbook.xlsx",
+        make_xlsx(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        sheet_name="Sales",
+    )
+
+    assert payload["structure_status"] == "detected"
+    assert payload["selected_sheet_name"] == "Sales"
+    assert payload["has_detected_header"] is True
+    assert payload["column_names"] == ["customer", "amount"]
+    assert payload["preview"]["rows"] == [["Ari", "1200"]]
+
+
+def test_detect_structure_rejects_missing_excel_sheet() -> None:
+    payload = post_detect(
+        "workbook.xlsx",
+        make_xlsx(),
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        sheet_name="Missing",
+    )
+
+    assert payload["structure_status"] == "rejected"
+    assert payload["warnings"][0]["code"] == "selected_sheet_not_found"
 
 
 def test_detect_structure_rejects_unsupported_pdf() -> None:
