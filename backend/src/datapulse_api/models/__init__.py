@@ -45,6 +45,8 @@ from datapulse_api.models.report import (
     CleaningReportDocument,
     CleaningReportMetadata,
     ReportExportMetadata,
+    SavedSessionReportDocument,
+    SavedSessionReportMetadata,
 )
 from datapulse_api.models.sessions import (
     SavedCleaningSessionCreate,
@@ -104,6 +106,8 @@ __all__ = [
     "CleaningReportDocument",
     "CleaningReportMetadata",
     "ReportExportMetadata",
+    "SavedSessionReportDocument",
+    "SavedSessionReportMetadata",
     "SavedCleaningSessionCreate",
     "SavedCleaningSessionDetail",
     "SavedCleaningSessionListResponse",
