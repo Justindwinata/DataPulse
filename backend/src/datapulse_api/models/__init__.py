@@ -41,6 +41,11 @@ from datapulse_api.models.quality import (
     QualityStatus,
     SeverityCounts,
 )
+from datapulse_api.models.report import (
+    CleaningReportDocument,
+    CleaningReportMetadata,
+    ReportExportMetadata,
+)
 from datapulse_api.models.structure_detection import (
     DelimiterConfidence,
     DelimiterDetection,
@@ -90,6 +95,9 @@ __all__ = [
     "QualityNextStep",
     "QualityStatus",
     "SeverityCounts",
+    "CleaningReportDocument",
+    "CleaningReportMetadata",
+    "ReportExportMetadata",
     "DelimiterConfidence",
     "DelimiterDetection",
     "ExcelSheetMetadata",
