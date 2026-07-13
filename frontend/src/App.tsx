@@ -35,6 +35,7 @@ import {
   SavedSessionsError,
   createSession,
   deleteSession,
+  generateSavedSessionReport,
   getSession,
   listSessions,
   type SavedCleaningSessionDetail,
@@ -221,6 +222,8 @@ function App() {
   const [saveSessionSuccessMessage, setSaveSessionSuccessMessage] = useState<string | null>(null);
   const [historyErrorMessage, setHistoryErrorMessage] = useState<string | null>(null);
   const [historySuccessMessage, setHistorySuccessMessage] = useState<string | null>(null);
+  const [savedReportErrorMessage, setSavedReportErrorMessage] = useState<string | null>(null);
+  const [savedReportSuccessMessage, setSavedReportSuccessMessage] = useState<string | null>(null);
   const [savedSessions, setSavedSessions] = useState<SavedCleaningSessionSummary[]>([]);
   const [selectedSavedSession, setSelectedSavedSession] =
     useState<SavedCleaningSessionDetail | null>(null);
@@ -233,6 +236,7 @@ function App() {
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isDeletingSessionId, setIsDeletingSessionId] = useState<number | null>(null);
+  const [isGeneratingSavedReport, setIsGeneratingSavedReport] = useState(false);
 
   const clearReportStatus = () => {
     setReportErrorMessage(null);
@@ -589,6 +593,8 @@ function App() {
   const handleOpenSessionDetail = async (sessionId: number) => {
     setHistoryErrorMessage(null);
     setHistorySuccessMessage(null);
+    setSavedReportErrorMessage(null);
+    setSavedReportSuccessMessage(null);
 
     try {
       setSelectedSavedSession(await getSession(sessionId));
@@ -598,6 +604,36 @@ function App() {
           ? error.message
           : "Loading saved session detail failed. Confirm the backend is running and try again.",
       );
+    }
+  };
+
+  const handleOpenSavedSessionReport = async () => {
+    if (!selectedSavedSession) {
+      setSavedReportErrorMessage("Open a saved session detail before generating a saved report.");
+      return;
+    }
+
+    setIsGeneratingSavedReport(true);
+    setSavedReportErrorMessage(null);
+    setSavedReportSuccessMessage(null);
+
+    try {
+      const blob = await generateSavedSessionReport(selectedSavedSession.id);
+      const url = URL.createObjectURL(blob);
+      const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+      setSavedReportSuccessMessage(
+        openedWindow
+          ? "Opened saved HTML report."
+          : "Generated saved HTML report. Allow pop-ups if the report did not open.",
+      );
+    } catch (error) {
+      setSavedReportErrorMessage(
+        error instanceof SavedSessionsError
+          ? error.message
+          : "Saved HTML report generation failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsGeneratingSavedReport(false);
     }
   };
 
@@ -1561,6 +1597,34 @@ function App() {
                       </div>
                     </div>
                   )}
+                  <div className="saved-report-panel" aria-label="Saved report replay panel">
+                    <div>
+                      <span className="status-label">HTML</span>
+                      <h3>Open Saved HTML Report</h3>
+                      <p>
+                        Generate a standalone report from saved structure, quality, cleaning,
+                        and export metadata. The original file is not required or stored.
+                      </p>
+                    </div>
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      disabled={isGeneratingSavedReport}
+                      onClick={handleOpenSavedSessionReport}
+                    >
+                      {isGeneratingSavedReport ? "Generating saved report..." : "Open Saved HTML Report"}
+                    </button>
+                    {savedReportSuccessMessage && (
+                      <p className="export-status success">{savedReportSuccessMessage}</p>
+                    )}
+                    {savedReportErrorMessage && (
+                      <p className="export-status error">{savedReportErrorMessage}</p>
+                    )}
+                    <p className="future-note">
+                      Saved report replay is metadata-based. It does not reprocess the original file
+                      or regenerate cleaned CSV from history.
+                    </p>
+                  </div>
                   <p className="future-note">
                     Saved history is local only. Cloud sync, authentication, and saved source files
                     are not implemented.

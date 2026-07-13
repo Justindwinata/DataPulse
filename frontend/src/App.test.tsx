@@ -19,6 +19,7 @@ import { generateCleaningReport } from "./api/cleaningReport";
 import {
   createSession,
   deleteSession,
+  generateSavedSessionReport,
   getSession,
   listSessions,
 } from "./api/savedSessions";
@@ -78,6 +79,7 @@ vi.mock("./api/savedSessions", async (importOriginal) => {
     ...actual,
     createSession: vi.fn(),
     deleteSession: vi.fn(),
+    generateSavedSessionReport: vi.fn(),
     getSession: vi.fn(),
     listSessions: vi.fn(),
   };
@@ -394,6 +396,7 @@ describe("App", () => {
     vi.mocked(generateCleaningReport).mockReset();
     vi.mocked(createSession).mockReset();
     vi.mocked(deleteSession).mockReset();
+    vi.mocked(generateSavedSessionReport).mockReset();
     vi.mocked(getSession).mockReset();
     vi.mocked(listSessions).mockReset();
     vi.stubGlobal("confirm", vi.fn(() => true));
@@ -974,6 +977,61 @@ describe("App", () => {
     });
     expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
     expect(screen.getByText(/trim_whitespace/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open Saved HTML Report" })).toBeInTheDocument();
+    expect(screen.getByText(/Saved report replay is metadata-based/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /PDF/i })).not.toBeInTheDocument();
+  });
+
+  it("opens a saved HTML report from session detail", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(generateSavedSessionReport).mockResolvedValue(
+      new Blob(["<html>saved report</html>"], { type: "text/html" }),
+    );
+    const createObjectUrl = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:datapulse-saved-report");
+    const openWindow = vi.fn(() => ({ closed: false }) as Window);
+    vi.stubGlobal("open", openWindow);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "View Detail" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Open Saved HTML Report" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open Saved HTML Report" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Opened saved HTML report.")).toBeInTheDocument();
+    });
+    expect(vi.mocked(generateSavedSessionReport)).toHaveBeenCalledWith(7);
+    expect(createObjectUrl).toHaveBeenCalled();
+    expect(openWindow).toHaveBeenCalledWith("blob:datapulse-saved-report", "_blank", "noopener,noreferrer");
+  });
+
+  it("renders saved HTML report error state", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(generateSavedSessionReport).mockRejectedValue(new Error("backend down"));
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "View Detail" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Open Saved HTML Report" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open Saved HTML Report" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Saved HTML report generation failed/)).toBeInTheDocument();
+    });
   });
 
   it("deletes a saved session after confirmation", async () => {

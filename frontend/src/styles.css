@@ -457,7 +457,8 @@ dd {
 
 .export-panel,
 .report-panel,
-.save-session-panel {
+.save-session-panel,
+.saved-report-panel {
   display: grid;
   gap: 14px;
   margin-top: 18px;
@@ -467,14 +468,16 @@ dd {
 
 .export-panel h3,
 .report-panel h3,
-.save-session-panel h3 {
+.save-session-panel h3,
+.saved-report-panel h3 {
   margin-bottom: 8px;
   color: #102027;
 }
 
 .export-panel p,
 .report-panel p,
-.save-session-panel p {
+.save-session-panel p,
+.saved-report-panel p {
   margin-bottom: 8px;
   color: #52636b;
   line-height: 1.55;
