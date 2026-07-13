@@ -99,6 +99,26 @@ export async function deleteSession(
   }
 }
 
+export async function generateSavedSessionReport(
+  sessionId: number,
+  apiBaseUrl: string = defaultApiBaseUrl,
+): Promise<Blob> {
+  let response: Response;
+  try {
+    response = await fetch(`${apiBaseUrl}/sessions/${sessionId}/report.html`);
+  } catch (error) {
+    throw new SavedSessionsError();
+  }
+  if (!response.ok) {
+    throw new SavedSessionsError(`Saved session report request failed with status ${response.status}.`);
+  }
+  try {
+    return await response.blob();
+  } catch (error) {
+    throw new SavedSessionsError("Saved session report returned an unreadable response.");
+  }
+}
+
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {
   let response: Response;
   try {

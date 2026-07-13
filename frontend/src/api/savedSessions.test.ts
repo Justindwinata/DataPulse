@@ -4,6 +4,7 @@ import {
   SavedSessionsError,
   createSession,
   deleteSession,
+  generateSavedSessionReport,
   getSession,
   listSessions,
   type SavedCleaningSessionCreate,
@@ -113,6 +114,28 @@ describe("saved sessions client", () => {
     await deleteSession(1, "http://api.test");
 
     expect(fetchMock).toHaveBeenCalledWith("http://api.test/sessions/1", { method: "DELETE" });
+  });
+
+  it("fetches a saved session HTML report blob", async () => {
+    const reportBlob = new Blob(["<html>report</html>"], { type: "text/html" });
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      blob: async () => reportBlob,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await generateSavedSessionReport(1, "http://api.test");
+
+    expect(result).toBe(reportBlob);
+    expect(fetchMock).toHaveBeenCalledWith("http://api.test/sessions/1/report.html");
+  });
+
+  it("throws a safe error when saved report generation fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+
+    await expect(generateSavedSessionReport(404, "http://api.test")).rejects.toThrow(
+      "Saved session report request failed with status 404.",
+    );
   });
 
   it("throws a safe error when the backend returns an error", async () => {
