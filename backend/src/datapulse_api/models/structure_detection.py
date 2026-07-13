@@ -7,6 +7,7 @@ class StructureDetectionStatus(StrEnum):
     DETECTED = "detected"
     REJECTED = "rejected"
     NOT_IMPLEMENTED = "not_implemented"
+    SHEET_SELECTION_REQUIRED = "sheet_selection_required"
 
 
 class DelimiterConfidence(StrEnum):
@@ -26,6 +27,7 @@ class StructureNextStep(StrEnum):
     QUALITY_ISSUE_DETECTION = "quality_issue_detection"
     UPLOAD_SUPPORTED_FILE = "upload_supported_file"
     WAIT_FOR_EXCEL_SUPPORT = "wait_for_excel_support"
+    SELECT_EXCEL_SHEET = "select_excel_sheet"
 
 
 class DelimiterDetection(BaseModel):
@@ -52,6 +54,26 @@ class RawTablePreview(BaseModel):
     rows: list[list[str]] = Field(default_factory=list)
 
 
+class ExcelSheetMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    sheet_name: str = Field(min_length=1, max_length=255)
+    sheet_index: NonNegativeInt
+    max_row: NonNegativeInt | None = None
+    max_column: NonNegativeInt | None = None
+    is_empty: bool = False
+
+
+class ExcelWorkbookMetadata(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    workbook_type: str = Field(min_length=1, max_length=16)
+    sheet_names: list[str] = Field(min_length=1)
+    sheet_count: NonNegativeInt
+    default_sheet_name: str = Field(min_length=1, max_length=255)
+    sheets: list[ExcelSheetMetadata] = Field(default_factory=list)
+
+
 class StructureDetectionResult(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -62,6 +84,8 @@ class StructureDetectionResult(BaseModel):
     content_type: str | None = Field(default=None, max_length=120)
     structure_status: StructureDetectionStatus
     delimiter: DelimiterDetection | None = None
+    workbook: ExcelWorkbookMetadata | None = None
+    selected_sheet_name: str | None = Field(default=None, max_length=255)
     has_detected_header: bool = False
     header_row_index: NonNegativeInt | None = None
     column_names: list[str] = Field(default_factory=list)

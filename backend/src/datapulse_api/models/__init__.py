@@ -23,6 +23,8 @@ from datapulse_api.models.file_upload import (
 from datapulse_api.models.structure_detection import (
     DelimiterConfidence,
     DelimiterDetection,
+    ExcelSheetMetadata,
+    ExcelWorkbookMetadata,
     RawTablePreview,
     StructureDetectionResult,
     StructureDetectionStatus,
@@ -50,6 +52,8 @@ __all__ = [
     "UploadValidationStatus",
     "DelimiterConfidence",
     "DelimiterDetection",
+    "ExcelSheetMetadata",
+    "ExcelWorkbookMetadata",
     "RawTablePreview",
     "StructureDetectionResult",
     "StructureDetectionStatus",
