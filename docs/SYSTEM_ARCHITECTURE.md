@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0005 adds deterministic data quality profiling while keeping cleaning, export, reports, and saved history out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0006 adds deterministic cleaning rule selection and cleaned preview while keeping CSV download, full-file export, reports, and saved history out of scope.
 
 ## Repository Layout
 
@@ -34,6 +34,7 @@ The backend exposes API routes through FastAPI. Current endpoints:
 - `POST /files/validate-upload`
 - `POST /files/detect-structure`
 - `POST /files/detect-quality`
+- `POST /files/apply-cleaning-preview`
 
 Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
 
@@ -42,6 +43,8 @@ CSV-like structure detection logic lives in `datapulse_api.services.csv_structur
 Excel structure detection logic lives in `datapulse_api.services.excel_structure_detection`. It uses `openpyxl` for `.xlsx`, `xlrd` for compatible `.xls`, bounded row sampling, deterministic header heuristics, selected sheet metadata, preview normalization, and structured warnings. Excel previews are values-only.
 
 Data quality profiling logic lives in `datapulse_api.services.data_quality`. It reuses structure detection metadata, reads bounded quality samples, and reports issues without modifying data. CSV-like files can be profiled directly. Excel files require `sheet_name` so the service profiles one selected table-like sheet at a time.
+
+Cleaning preview logic lives in `datapulse_api.services.cleaning_engine`. It reuses bounded table samples, applies only selected deterministic rules, returns before/after summaries, reports rule effects, and generates a capped cleaned preview. It does not store files, mutate uploads, or export cleaned CSV in DP-0006.
 
 Current upload validation rules:
 
@@ -79,9 +82,20 @@ Current data quality profiling rules:
 - Quality score starts at 100 and subtracts deterministic points by severity: critical issues cost more than warnings, warnings cost more than info notes
 - Suggested cleaning rules are returned as future-rule metadata only
 
+Current cleaning preview rules:
+
+- `trim_whitespace`
+- `remove_empty_rows`
+- `remove_duplicate_rows`
+- `drop_empty_columns`
+- `standardize_column_names`
+- `generate_missing_column_names`
+
+Cleaning preview is sample-based. Numeric conversion, date conversion, boolean conversion, and missing-value imputation are intentionally deferred because they can change data meaning.
+
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, issue cards grouped by severity, and a scroll-safe column profile table. It does not display fake cleaned data, download actions, or claims of Excel formatting preservation.
+The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, and scroll-safe preview tables. It does not display download actions or claims of Excel formatting preservation.
 
 ## Future Processing Flow
 
@@ -108,8 +122,8 @@ The frontend is a Vite React application written in TypeScript. The upload works
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0005
+- No deployment in DP-0006
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage
-- No cleaning engine, cleaned preview, export generation, report generation, or saved history
+- No cleaned CSV download, full-file export, report generation, or saved history

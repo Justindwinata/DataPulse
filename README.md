@@ -68,6 +68,19 @@ DP-0005 adds deterministic data quality profiling:
 
 DataPulse reports suggested future cleaning rules, but it does not apply them yet. No data is modified in DP-0005.
 
+DP-0006 adds deterministic cleaning rule selection and cleaned preview:
+
+- `POST /files/apply-cleaning-preview` multipart endpoint
+- CSV, TSV, TXT, XLSX, and compatible XLS cleaning preview
+- Optional `sheet_name` form field for Excel selected-sheet cleaning
+- Cleaning rules for trimming whitespace, removing empty rows, removing duplicate rows, dropping empty columns, standardizing column names, and generating missing column names
+- Before/after row and column summaries
+- Rule effects with applied/no-effect status and affected row/column counts
+- Sample-based cleaned preview capped at 20 rows
+- Frontend rule selection cards, recommended badges from detected issues, cleaning summary cards, rule effects, and cleaned preview table
+
+DataPulse generates a preview only in DP-0006. It does not modify the original uploaded file and does not provide CSV download/export yet.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -87,11 +100,12 @@ DataPulse reports suggested future cleaning rules, but it does not apply them ye
 - CSV/TSV/TXT structure detection and bounded raw preview exist
 - Excel sheet discovery and selected sheet raw preview exist for table-like workbooks
 - Data quality profiling exists and is sample-based
-- No cleaning engine yet
-- No cleaned preview yet
+- Deterministic cleaning preview exists and is sample-based
 - No cleaned CSV export yet
+- No full-file export yet
 - No HTML report yet
 - No saved history yet
+- No risky type conversion rules yet
 - No AI or LLM cleaning
 - No authentication
 - No deployment
@@ -217,5 +231,14 @@ Content-Type: multipart/form-data
 ```
 
 The quality endpoint accepts one `file` field and an optional `sheet_name` field for Excel workbooks. It returns issue summaries, severity counts, a heuristic quality score, column-level profiles, and suggested future cleaning rules. Suggested rules are metadata only; DataPulse does not clean, export, or persist the uploaded file in DP-0005.
+
+Cleaning preview:
+
+```http
+POST /files/apply-cleaning-preview
+Content-Type: multipart/form-data
+```
+
+The cleaning preview endpoint accepts one `file` field, a `rules` form field containing selected rule codes, and an optional `sheet_name` for Excel workbooks. It returns before/after summaries, rule effects, warnings, and a bounded cleaned preview. It does not download/export CSV files and does not modify the original uploaded file.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.

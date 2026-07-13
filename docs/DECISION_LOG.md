@@ -51,3 +51,11 @@ DP-0005 detects data quality issues before introducing any cleaning engine. The 
 ## 2026-07-13 - Heuristic Quality Score Is Sample-Based
 
 The quality score starts at 100 and subtracts deterministic points by issue severity. It is a practical diagnostic signal for the sampled data, not a scientific or full-file guarantee.
+
+## 2026-07-13 - Cleaning Preview Before Export
+
+DP-0006 applies selected deterministic rules to a bounded sample and returns a cleaned preview with rule effects. It intentionally does not implement CSV download yet so users can inspect transformations before export is introduced.
+
+## 2026-07-13 - Defer Risky Type Conversions
+
+DP-0006 avoids numeric, date, boolean, and missing-value conversion rules. Those transformations can change meaning, so they should be designed as separate explicit rules with stronger previews and reporting.

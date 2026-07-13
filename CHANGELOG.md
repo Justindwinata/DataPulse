@@ -2,6 +2,22 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.6.0 - DP-0006 Cleaning Rules Engine and Cleaned Preview
+
+### Added
+
+- Added cleaning preview response models for selected rules, before/after summaries, rule effects, warnings, and cleaned preview rows.
+- Added deterministic cleaning engine service.
+- Added cleaning rules for trimming whitespace, removing empty rows, removing duplicate rows, dropping empty columns, standardizing column names, and generating missing column names.
+- Added `POST /files/apply-cleaning-preview` endpoint with optional `sheet_name`.
+- Added sample-based cleaned preview capped at 20 rows.
+- Added frontend cleaning preview client.
+- Added frontend rule selection cards, recommended rule badges, cleaning summary cards, rule effects, and cleaned preview table.
+
+### Not Included
+
+- Cleaned CSV download, full-file export, HTML reports, saved history, risky type conversion rules, AI/LLM cleaning, authentication, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.5.0 - DP-0005 Data Quality Issue Detection
 
 ### Added

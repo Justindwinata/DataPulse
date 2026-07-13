@@ -51,10 +51,16 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Track before/after summaries.
 - Keep transformations transparent and user-selected.
 - Add cleaned preview.
+- Status: implemented as sample-based cleaning preview.
 
-## DP-0007 - Export, Reports, and History
+## DP-0007 - Cleaned CSV Export
 
-- Export cleaned CSV.
+- Export cleaned CSV from selected deterministic rules.
+- Keep export CSV-first.
+- Avoid claiming Excel formatting preservation.
+
+## DP-0008 - Reports and History
+
 - Generate professional HTML cleaning reports.
 - Add SQLite-backed cleaning history.
 
