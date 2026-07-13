@@ -1,7 +1,12 @@
 from fastapi import APIRouter, Form, UploadFile
 
-from datapulse_api.models import FileUploadValidationResponse, StructureDetectionResult
+from datapulse_api.models import (
+    DataQualityResult,
+    FileUploadValidationResponse,
+    StructureDetectionResult,
+)
 from datapulse_api.services.csv_structure_detection import detect_csv_like_structure
+from datapulse_api.services.data_quality import detect_data_quality
 from datapulse_api.services.excel_structure_detection import (
     detect_excel_sheet_preview,
     detect_excel_workbook,
@@ -47,4 +52,18 @@ async def detect_structure(
         filename=filename,
         content_type=file.content_type,
         content=content,
+    )
+
+
+@router.post("/detect-quality")
+async def detect_quality(
+    file: UploadFile,
+    sheet_name: str | None = Form(default=None),
+) -> DataQualityResult:
+    content = await file.read()
+    return detect_data_quality(
+        filename=file.filename or "uploaded_file",
+        content_type=file.content_type,
+        content=content,
+        sheet_name=sheet_name,
     )
