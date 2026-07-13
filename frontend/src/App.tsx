@@ -10,6 +10,13 @@ import {
   detectFileStructure,
   type StructureDetectionResult,
 } from "./api/structureDetection";
+import {
+  DataQualityError,
+  detectDataQuality,
+  type DataQualityIssue,
+  type DataQualityResult,
+  type IssueSeverity,
+} from "./api/dataQuality";
 
 type ProductSection = {
   title: string;
@@ -42,6 +49,7 @@ const productSections: ProductSection[] = [
 const acceptedFormats = ".csv,.tsv,.txt,.xlsx,.xls";
 const csvLikeExtensions = new Set(["csv", "tsv", "txt"]);
 const excelExtensions = new Set(["xlsx", "xls"]);
+const issueSeverityOrder: IssueSeverity[] = ["critical", "warning", "info"];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -53,25 +61,41 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function uniqueAffectedColumns(issues: DataQualityIssue[]): string[] {
+  return Array.from(new Set(issues.flatMap((issue) => issue.affected_columns)));
+}
+
+function issuesBySeverity(
+  issues: DataQualityIssue[],
+  severity: IssueSeverity,
+): DataQualityIssue[] {
+  return issues.filter((issue) => issue.severity === severity);
+}
+
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] =
     useState<FileUploadValidationResponse | null>(null);
   const [structureResult, setStructureResult] = useState<StructureDetectionResult | null>(null);
+  const [qualityResult, setQualityResult] = useState<DataQualityResult | null>(null);
   const [selectedSheetName, setSelectedSheetName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [structureErrorMessage, setStructureErrorMessage] = useState<string | null>(null);
+  const [qualityErrorMessage, setQualityErrorMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
+  const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
     setSelectedFile(file);
     setValidationResult(null);
     setStructureResult(null);
+    setQualityResult(null);
     setSelectedSheetName("");
     setErrorMessage(null);
     setStructureErrorMessage(null);
+    setQualityErrorMessage(null);
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -86,6 +110,7 @@ function App() {
     setStructureErrorMessage(null);
     setValidationResult(null);
     setStructureResult(null);
+    setQualityResult(null);
     setSelectedSheetName("");
 
     try {
@@ -109,7 +134,9 @@ function App() {
 
     setIsDetectingStructure(true);
     setStructureErrorMessage(null);
+    setQualityErrorMessage(null);
     setStructureResult(null);
+    setQualityResult(null);
 
     try {
       const result = await detectFileStructure(selectedFile);
@@ -136,6 +163,8 @@ function App() {
 
     setIsDetectingStructure(true);
     setStructureErrorMessage(null);
+    setQualityErrorMessage(null);
+    setQualityResult(null);
 
     try {
       setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
@@ -150,6 +179,33 @@ function App() {
     }
   };
 
+  const handleAnalyzeQuality = async () => {
+    if (!selectedFile || !structureResult || structureResult.structure_status !== "detected") {
+      setQualityErrorMessage("Detect file structure before analyzing data quality.");
+      return;
+    }
+
+    const sheetName = excelExtensions.has(structureResult.detected_extension)
+      ? structureResult.selected_sheet_name ?? selectedSheetName
+      : undefined;
+
+    setIsAnalyzingQuality(true);
+    setQualityErrorMessage(null);
+    setQualityResult(null);
+
+    try {
+      setQualityResult(await detectDataQuality(selectedFile, sheetName || undefined));
+    } catch (error) {
+      setQualityErrorMessage(
+        error instanceof DataQualityError
+          ? error.message
+          : "Data quality analysis failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsAnalyzingQuality(false);
+    }
+  };
+
   const canDetectStructure =
     validationResult?.validation_status === "accepted" &&
     (csvLikeExtensions.has(validationResult.detected_extension) ||
@@ -157,6 +213,7 @@ function App() {
   const isExcelUpload =
     validationResult?.validation_status === "accepted" &&
     ["xlsx", "xls"].includes(validationResult.detected_extension);
+  const affectedColumns = qualityResult ? uniqueAffectedColumns(qualityResult.issues) : [];
 
   return (
     <main className="app-shell">
@@ -474,7 +531,171 @@ function App() {
             )}
 
             <p className="future-note">
-              Next: quality issue detection and cleaning rules will be implemented later.
+              Next: analyze data quality before cleaning rules are implemented.
+            </p>
+            <button
+              className="secondary-action"
+              type="button"
+              disabled={isAnalyzingQuality}
+              onClick={handleAnalyzeQuality}
+            >
+              {isAnalyzingQuality ? "Analyzing data quality..." : "Analyze Data Quality"}
+            </button>
+          </div>
+        )}
+      </section>
+
+      <section className="quality-workspace" aria-labelledby="quality-title">
+        <div className="section-heading">
+          <p className="eyebrow">Data quality</p>
+          <h2 id="quality-title">Issue summary and column profile</h2>
+        </div>
+
+        {!qualityResult && !qualityErrorMessage && (
+          <div className="quality-empty">
+            <h3>No quality profile yet</h3>
+            <p>
+              Run structure detection first, then analyze the bounded sample for missing
+              values, duplicate rows, type patterns, whitespace, and column-level issues.
+            </p>
+          </div>
+        )}
+
+        {qualityErrorMessage && (
+          <div className="result-card rejected">
+            <span className="status-label">Error</span>
+            <h3>Data quality request failed</h3>
+            <p>{qualityErrorMessage}</p>
+          </div>
+        )}
+
+        {qualityResult && qualityResult.quality_status !== "profiled" && (
+          <div className="result-card rejected">
+            <span className="status-label">
+              {qualityResult.quality_status === "sheet_selection_required"
+                ? "Sheet required"
+                : "Rejected"}
+            </span>
+            <h3>{qualityResult.safe_filename}</h3>
+            {qualityResult.messages.map((message) => (
+              <p key={message}>{message}</p>
+            ))}
+          </div>
+        )}
+
+        {qualityResult && qualityResult.quality_status === "profiled" && (
+          <div className="quality-result">
+            <div className="summary-grid quality-summary">
+              <article>
+                <span>Quality score</span>
+                <strong>{qualityResult.quality_score}</strong>
+                <p>Heuristic sample score</p>
+              </article>
+              <article>
+                <span>Total issues</span>
+                <strong>{qualityResult.total_issue_count}</strong>
+                <p>{qualityResult.sampled_row_count} sampled rows</p>
+              </article>
+              <article>
+                <span>Warnings</span>
+                <strong>{qualityResult.severity_counts.warning}</strong>
+                <p>{qualityResult.severity_counts.critical} critical</p>
+              </article>
+              <article>
+                <span>Affected columns</span>
+                <strong>{affectedColumns.length}</strong>
+                <p>{qualityResult.severity_counts.info} info notes</p>
+              </article>
+            </div>
+
+            {qualityResult.issues.length > 0 ? (
+              <div className="issue-panel">
+                <h3>Detected issues</h3>
+                {issueSeverityOrder.map((severity) => {
+                  const groupedIssues = issuesBySeverity(qualityResult.issues, severity);
+                  if (groupedIssues.length === 0) {
+                    return null;
+                  }
+                  return (
+                    <div className="issue-group" key={severity}>
+                      <h4>{severity}</h4>
+                      <div className="issue-card-grid">
+                        {groupedIssues.map((issue) => (
+                          <article className={`issue-card ${issue.severity}`} key={issue.code}>
+                            <span>{issue.code}</span>
+                            <h5>{issue.title}</h5>
+                            <p>{issue.message}</p>
+                            {issue.affected_columns.length > 0 && (
+                              <p>
+                                <strong>Columns:</strong> {issue.affected_columns.join(", ")}
+                              </p>
+                            )}
+                            {issue.affected_row_count !== null && (
+                              <p>
+                                <strong>Rows:</strong> {issue.affected_row_count}
+                              </p>
+                            )}
+                            {issue.suggested_cleaning_rule && (
+                              <p>
+                                <strong>Future rule:</strong> {issue.suggested_cleaning_rule}
+                              </p>
+                            )}
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="issue-panel">
+                <h3>No issues detected in the sampled data</h3>
+                <p>The profile is sample-based and does not guarantee the full file is clean.</p>
+              </div>
+            )}
+
+            <div className="preview-panel">
+              <div className="preview-heading">
+                <h3>Column profile</h3>
+                <p>Types and counts are inferred from the bounded sample.</p>
+              </div>
+              <div className="table-scroll" role="region" aria-label="Column profile table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Column</th>
+                      <th>Type</th>
+                      <th>Missing</th>
+                      <th>Missing %</th>
+                      <th>Unique</th>
+                      <th>Issues</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {qualityResult.columns.map((column) => (
+                      <tr key={`${column.column_index}-${column.column_name}`}>
+                        <td>{column.column_name}</td>
+                        <td>{column.inferred_type}</td>
+                        <td>{column.missing_count}</td>
+                        <td>{column.missing_percentage}%</td>
+                        <td>{column.unique_count}</td>
+                        <td>
+                          {column.issues.length > 0 ? (
+                            <span className="issue-badges">{column.issues.join(", ")}</span>
+                          ) : (
+                            "None"
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <p className="future-note">
+              Cleaning rules will be available in the next milestone. DataPulse has not
+              modified your file yet.
             </p>
           </div>
         )}

@@ -6,6 +6,10 @@ import {
   detectFileStructure,
   type StructureDetectionResult,
 } from "./api/structureDetection";
+import {
+  detectDataQuality,
+  type DataQualityResult,
+} from "./api/dataQuality";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
@@ -21,6 +25,14 @@ vi.mock("./api/structureDetection", async (importOriginal) => {
   return {
     ...actual,
     detectFileStructure: vi.fn(),
+  };
+});
+
+vi.mock("./api/dataQuality", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api/dataQuality")>();
+  return {
+    ...actual,
+    detectDataQuality: vi.fn(),
   };
 });
 
@@ -156,10 +168,82 @@ const excelPreviewResponse: StructureDetectionResult = {
   },
 };
 
+const qualityResponse: DataQualityResult = {
+  quality_status: "profiled",
+  original_filename: "messy.csv",
+  safe_filename: "messy.csv",
+  detected_extension: "csv",
+  selected_sheet_name: null,
+  sampled_row_count: 2,
+  detected_column_count: 2,
+  total_issue_count: 2,
+  severity_counts: {
+    info: 1,
+    warning: 1,
+    critical: 0,
+  },
+  quality_score: 91,
+  issues: [
+    {
+      code: "missing_values",
+      title: "Missing values detected",
+      message: "Some columns contain empty values in the sampled data.",
+      severity: "warning",
+      affected_columns: ["amount"],
+      affected_row_count: 1,
+      suggested_cleaning_rule: null,
+    },
+    {
+      code: "numeric_values_as_text",
+      title: "Possible numeric columns stored as text",
+      message: "Some sampled columns contain numeric-looking text values.",
+      severity: "info",
+      affected_columns: ["amount"],
+      affected_row_count: null,
+      suggested_cleaning_rule: "convert_numeric_columns",
+    },
+  ],
+  columns: [
+    {
+      column_name: "name",
+      column_index: 0,
+      non_empty_count: 2,
+      missing_count: 0,
+      missing_percentage: 0,
+      inferred_type: "text",
+      unique_count: 2,
+      sample_values: ["Ari", "Justin"],
+      issues: [],
+    },
+    {
+      column_name: "amount",
+      column_index: 1,
+      non_empty_count: 1,
+      missing_count: 1,
+      missing_percentage: 50,
+      inferred_type: "number",
+      unique_count: 1,
+      sample_values: ["1200"],
+      issues: ["missing_values", "numeric_values_as_text"],
+    },
+  ],
+  messages: [],
+  next_step: "cleaning_rules",
+};
+
+const excelQualityResponse: DataQualityResult = {
+  ...qualityResponse,
+  original_filename: "workbook.xlsx",
+  safe_filename: "workbook.xlsx",
+  detected_extension: "xlsx",
+  selected_sheet_name: "Sales",
+};
+
 describe("App", () => {
   beforeEach(() => {
     vi.mocked(validateUploadFile).mockReset();
     vi.mocked(detectFileStructure).mockReset();
+    vi.mocked(detectDataQuality).mockReset();
   });
 
   it("renders the DataPulse product foundation screen", () => {
@@ -263,6 +347,7 @@ describe("App", () => {
     expect(screen.getByText("empty_rows_in_sample")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "name" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "Ada" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
   });
 
   it("renders Excel sheet selector after workbook discovery", async () => {
@@ -322,6 +407,106 @@ describe("App", () => {
     expect(screen.getByRole("columnheader", { name: "customer" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "Ari" })).toBeInTheDocument();
     expect(vi.mocked(detectFileStructure)).toHaveBeenLastCalledWith(expect.any(File), "Sales");
+  });
+
+  it("renders quality summary, issue cards, and column profile", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Quality score")).toBeInTheDocument();
+    });
+    expect(screen.getByText("91")).toBeInTheDocument();
+    expect(screen.getByText("Missing values detected")).toBeInTheDocument();
+    expect(screen.getByRole("columnheader", { name: "Column" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "amount" })).toBeInTheDocument();
+    expect(screen.getByText(/DataPulse has not modified your file yet/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
+    expect(screen.queryByText(/cleaned preview/i)).not.toBeInTheDocument();
+  });
+
+  it("runs quality analysis for the selected Excel sheet", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(excelAcceptedResponse);
+    vi.mocked(detectFileStructure)
+      .mockResolvedValueOnce(workbookDiscoveryResponse)
+      .mockResolvedValueOnce(excelPreviewResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(excelQualityResponse);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["workbook"], "workbook.xlsx")],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Preview selected sheet" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Preview selected sheet" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Quality score")).toBeInTheDocument();
+    });
+    expect(vi.mocked(detectDataQuality)).toHaveBeenLastCalledWith(expect.any(File), "Sales");
+  });
+
+  it("renders quality backend error state", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockRejectedValue(new Error("backend down"));
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Data quality request failed")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Confirm the backend is running/)).toBeInTheDocument();
   });
 
   it("renders structure detection backend error state", async () => {

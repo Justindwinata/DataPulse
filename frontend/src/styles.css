@@ -30,6 +30,7 @@ body {
 .hero,
 .upload-workspace,
 .structure-workspace,
+.quality-workspace,
 .workflow {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
@@ -93,6 +94,8 @@ h1 {
 .result-panel,
 .structure-empty,
 .structure-result,
+.quality-empty,
+.quality-result,
 .feature-card {
   border: 1px solid #d7e0e4;
   border-radius: 8px;
@@ -324,13 +327,20 @@ dd {
 }
 
 .structure-empty,
-.structure-result {
+.structure-result,
+.quality-empty,
+.quality-result {
   padding: 22px;
 }
 
-.structure-empty h3 {
+.structure-empty h3,
+.quality-empty h3 {
   margin-bottom: 10px;
   color: #102027;
+}
+
+.quality-workspace {
+  padding: 12px 0 44px;
 }
 
 .summary-grid {
@@ -369,8 +379,13 @@ dd {
   line-height: 1.4;
 }
 
+.quality-summary {
+  margin-bottom: 22px;
+}
+
 .warning-panel,
-.preview-panel {
+.preview-panel,
+.issue-panel {
   border-top: 1px solid #d7e0e4;
   padding-top: 18px;
   margin-top: 18px;
@@ -440,9 +455,78 @@ dd {
 }
 
 .warning-panel h3,
-.preview-panel h3 {
+.preview-panel h3,
+.issue-panel h3 {
   margin-bottom: 12px;
   color: #102027;
+}
+
+.issue-group {
+  margin-top: 16px;
+}
+
+.issue-group h4 {
+  margin: 0 0 10px;
+  color: #697a82;
+  font-size: 0.8rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.issue-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.issue-card {
+  border: 1px solid #d7e0e4;
+  border-left: 4px solid #697a82;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.issue-card.critical {
+  border-left-color: #b83b35;
+}
+
+.issue-card.warning {
+  border-left-color: #b05826;
+}
+
+.issue-card.info {
+  border-left-color: #20746b;
+}
+
+.issue-card span {
+  display: block;
+  margin-bottom: 8px;
+  color: #697a82;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.issue-card h5 {
+  margin: 0 0 8px;
+  color: #102027;
+  font-size: 1rem;
+}
+
+.issue-card p {
+  margin-bottom: 8px;
+  color: #52636b;
+  line-height: 1.5;
+}
+
+.issue-card p:last-child {
+  margin-bottom: 0;
+}
+
+.issue-card strong,
+.issue-badges {
+  color: #172026;
 }
 
 .warning-panel ul {
@@ -571,6 +655,7 @@ h2 {
   .hero,
   .upload-workspace,
   .structure-workspace,
+  .quality-workspace,
   .workflow {
     width: min(100% - 28px, 1120px);
   }
@@ -593,7 +678,8 @@ h2 {
   .result-metadata,
   .summary-grid,
   .sheet-selector,
-  .sheet-list {
+  .sheet-list,
+  .issue-card-grid {
     grid-template-columns: 1fr;
   }
 
