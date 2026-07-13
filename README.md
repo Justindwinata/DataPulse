@@ -94,6 +94,18 @@ DP-0007 adds cleaned CSV export and download:
 
 Export is CSV-first. DataPulse does not export XLSX and does not preserve Excel formatting, formulas as formulas, merged cell behavior, charts, or pivot tables.
 
+DP-0008 adds professional HTML cleaning reports:
+
+- `POST /files/cleaning-report.html` multipart endpoint
+- CSV, TSV, TXT, XLSX, and compatible XLS report generation
+- Optional `sheet_name` form field for Excel selected-sheet reports
+- Standalone HTML report with no external scripts or CDN dependencies
+- Report sections for uploaded file metadata, structure summary, quality issues, column profiles, selected cleaning rules, rule effects, before/after cleaning summary, cleaned preview, export notes, and limitations
+- Safe HTML escaping for filenames, sheet names, column names, cell values, issue messages, and other user-provided values
+- Frontend report panel with Open HTML Cleaning Report action, loading state, success state, and error state
+
+The HTML report summarizes the deterministic workflow. It does not save history, export PDF, export XLSX, preserve Excel formatting, or modify the original uploaded file.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -115,14 +127,16 @@ Export is CSV-first. DataPulse does not export XLSX and does not preserve Excel 
 - Data quality profiling exists and is sample-based
 - Deterministic cleaning preview exists and is sample-based
 - Cleaned CSV export exists for CSV-like files and selected Excel sheets
-- No HTML report yet
+- HTML cleaning report generation exists
 - No saved history yet
+- No PDF export
+- No XLSX export
 - No risky type conversion rules yet
 - No AI or LLM cleaning
 - No authentication
 - No deployment
 
-Excel support focuses on table-like sheets. DataPulse does not preserve workbook formatting, formulas as formulas, charts, merged-cell behavior, macros, pivot tables, or presentation styling. Cleaned export remains CSV-first and is planned for a later milestone.
+Excel support focuses on table-like sheets. DataPulse does not preserve workbook formatting, formulas as formulas, charts, merged-cell behavior, macros, pivot tables, or presentation styling. Cleaned export remains CSV-first.
 
 ## Tech Stack
 
@@ -262,4 +276,13 @@ Content-Type: multipart/form-data
 
 The cleaned CSV export endpoint accepts one `file` field, a `rules` form field containing selected rule codes, and an optional `sheet_name` for Excel workbooks. It returns a downloadable UTF-8 CSV file with a safe `_cleaned.csv` filename. CSV, TSV, and TXT exports process the uploaded file within the existing size limit. Excel exports process selected sheet values only.
 
-The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.
+HTML cleaning report:
+
+```http
+POST /files/cleaning-report.html
+Content-Type: multipart/form-data
+```
+
+The report endpoint accepts one `file` field, a `rules` form field containing selected rule codes, and an optional `sheet_name` for Excel workbooks. It returns standalone `text/html; charset=utf-8` content with structure, quality, cleaning, export, and limitation sections. User-provided values are HTML-escaped, and the report does not include external scripts or CDN assets.
+
+The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules while preserving honest implementation-status metadata.

@@ -63,6 +63,10 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 ## DP-0008 - HTML Cleaning Reports
 
 - Generate professional HTML cleaning reports.
+- Summarize validation, structure, quality, selected rules, rule effects, cleaned preview, export metadata, and limitations.
+- Return standalone escaped HTML with no external scripts or CDNs.
+- Add frontend Open HTML Cleaning Report workflow.
+- Status: implemented.
 
 ## DP-0009 - Saved Cleaning History
 
@@ -72,5 +76,5 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 
 - Better type profiling for numeric and date columns.
 - Safer large-file limits and streaming previews.
-- More detailed cleaning report sections.
+- PDF or richer report export options, if needed after the HTML report is stable.
 - Accessibility and keyboard workflow polish.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0007 adds cleaned CSV export and download while keeping HTML reports and saved history out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0008 adds standalone HTML cleaning reports while keeping saved history, authentication, deployment, PDF export, and XLSX export out of scope.
 
 ## Repository Layout
 
@@ -36,6 +36,7 @@ The backend exposes API routes through FastAPI. Current endpoints:
 - `POST /files/detect-quality`
 - `POST /files/apply-cleaning-preview`
 - `POST /files/export-cleaned-csv`
+- `POST /files/cleaning-report.html`
 
 Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
 
@@ -48,6 +49,8 @@ Data quality profiling logic lives in `datapulse_api.services.data_quality`. It 
 Cleaning preview logic lives in `datapulse_api.services.cleaning_engine`. It reuses bounded table samples, applies only selected deterministic rules, returns before/after summaries, reports rule effects, and generates a capped cleaned preview. It does not store files, mutate uploads, or export cleaned CSV in DP-0006.
 
 Cleaned CSV export logic lives in `datapulse_api.services.cleaned_csv_export`. It applies the same deterministic selected rules and returns UTF-8 CSV bytes with safe quoting. CSV-like inputs are exported from the uploaded file within the existing 10 MB limit. Excel inputs export selected sheet values only and require `sheet_name`.
+
+Cleaning report composition lives in `datapulse_api.services.cleaning_report`. It reuses structure detection, data quality profiling, cleaning preview, and cleaned CSV export metadata to build one report document. HTML rendering lives in `datapulse_api.services.report_html`; it returns standalone HTML with inline CSS, no JavaScript, no external CDN assets, and escaped user-provided values.
 
 Current upload validation rules:
 
@@ -105,9 +108,18 @@ Current cleaned CSV export rules:
 - Exported filenames are sanitized and end with `_cleaned.csv`
 - Excel export is values-only and does not preserve workbook formatting
 
+Current HTML report rules:
+
+- Output format is standalone HTML
+- Content type is `text/html; charset=utf-8`
+- Report generation requires `sheet_name` for Excel files
+- Sections include header metadata, executive summary, structure summary, quality issues, column profiles, selected rules, rule effects, cleaning summary, cleaned preview, export summary, and limitations
+- Filenames, sheet names, column names, cell values, issue messages, and other dynamic values are escaped before rendering
+- No external scripts, JavaScript, or CDN assets are included
+
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, and scroll-safe preview tables. It does not display HTML report or saved history actions yet.
+The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, and scroll-safe preview tables. It does not display saved history actions yet.
 
 ## Future Processing Flow
 
@@ -134,8 +146,10 @@ The frontend is a Vite React application written in TypeScript. The upload works
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0007
+- No deployment in DP-0008
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage
-- No HTML report generation or saved history
+- No saved history
+- No PDF export
+- No XLSX export

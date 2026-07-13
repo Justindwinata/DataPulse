@@ -63,10 +63,11 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0005: deterministic sample-based data quality issue detection and column profiling.
 - DP-0006: deterministic cleaning rule selection and sample-based cleaned preview.
 - DP-0007: cleaned CSV export and frontend download workflow.
+- DP-0008: standalone HTML cleaning report generation and frontend report opening workflow.
 
 ## Cleaning Model
 
-Cleaning is rule-based and deterministic. Current DP-0006 preview rules include trimming whitespace, removing empty rows, removing duplicate rows, dropping fully empty columns, standardizing column names, and generating missing column names. Future rules may include promoting a detected header row, normalizing text casing, and converting numeric or date columns.
+Cleaning is rule-based and deterministic. Current cleaning rules include trimming whitespace, removing empty rows, removing duplicate rows, dropping fully empty columns, standardizing column names, and generating missing column names. Future rules may include promoting a detected header row, normalizing text casing, and carefully converting numeric or date columns.
 
 ## Limitations
 
@@ -75,3 +76,5 @@ CSV and Excel cleaning is inherently contextual. A tool can detect likely issues
 DP-0006 cleaned preview is bounded and sample-based. It can show likely cleaning effects, but it does not export CSV files, generate reports, save history, or claim the full file has been cleaned.
 
 DP-0007 exports cleaned CSV files from selected deterministic rules. CSV-like inputs are processed from the uploaded file within the existing size limit. Excel inputs export selected sheet values only; workbook formatting and spreadsheet-specific behavior are not preserved.
+
+DP-0008 generates standalone HTML reports from uploaded data and selected deterministic rules. Reports summarize structure, quality, selected rules, rule effects, cleaning summaries, cleaned preview, export notes, and limitations. Reports escape user-provided values and do not save history, export PDF, export XLSX, or preserve Excel formatting.

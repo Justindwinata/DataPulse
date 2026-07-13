@@ -2,6 +2,21 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.8.0 - DP-0008 Professional HTML Cleaning Report
+
+### Added
+
+- Added cleaning report composition models and metadata.
+- Added standalone HTML report renderer with DataPulse branding, executive summary, structure summary, quality summary, column profile table, cleaning summary, rule effects, cleaned preview, export summary, and limitations.
+- Added safe HTML escaping for filenames, sheet names, column names, cell values, issue messages, and report text.
+- Added `POST /files/cleaning-report.html` endpoint returning `text/html; charset=utf-8`.
+- Added frontend HTML report client.
+- Added frontend report panel with Open HTML Cleaning Report action, loading state, opened state, and error state.
+
+### Not Included
+
+- Saved history, PDF export, XLSX export, risky type conversion rules, AI/LLM cleaning, authentication, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.7.0 - DP-0007 Cleaned CSV Export and Download
 
 ### Added

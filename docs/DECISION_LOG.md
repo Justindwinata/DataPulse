@@ -67,3 +67,11 @@ DP-0007 implements CSV download before HTML reports or saved history. This keeps
 ## 2026-07-13 - Excel Export Is Values-Only CSV
 
 Excel inputs export selected sheet values as CSV. DataPulse does not preserve formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, or workbook styling.
+
+## 2026-07-14 - HTML Report Before Saved History
+
+DP-0008 generates standalone HTML reports before adding persistence. Users can review a complete cleaning workflow summary without creating accounts, storing uploads, or introducing a database.
+
+## 2026-07-14 - Escape Report Data by Default
+
+HTML reports escape filenames, sheet names, column names, cell values, issue messages, and other dynamic values before rendering. Reports do not include external scripts or CDN assets.
