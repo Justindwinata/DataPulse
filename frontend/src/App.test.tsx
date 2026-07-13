@@ -16,6 +16,7 @@ import {
 } from "./api/cleaningPreview";
 import { exportCleanedCsv } from "./api/cleanedCsvExport";
 import { generateCleaningReport } from "./api/cleaningReport";
+import { createSession } from "./api/savedSessions";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
@@ -63,6 +64,14 @@ vi.mock("./api/cleaningReport", async (importOriginal) => {
   return {
     ...actual,
     generateCleaningReport: vi.fn(),
+  };
+});
+
+vi.mock("./api/savedSessions", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api/savedSessions")>();
+  return {
+    ...actual,
+    createSession: vi.fn(),
   };
 });
 
@@ -340,6 +349,33 @@ const excelCleaningPreviewResponse: CleaningPreviewResult = {
   selected_sheet_name: "Sales",
 };
 
+const savedSessionDetail = {
+  id: 7,
+  source_filename: "messy.csv",
+  detected_extension: "csv",
+  selected_sheet_name: null,
+  quality_score: 91,
+  total_issue_count: 2,
+  selected_rules_count: 2,
+  rows_before: 3,
+  rows_after: 2,
+  columns_before: 2,
+  columns_after: 2,
+  created_at: "2026-07-14T00:00:00Z",
+  updated_at: "2026-07-14T00:00:00Z",
+  content_type: "text/csv",
+  file_size_bytes: 18,
+  structure_summary: {},
+  quality_summary: {},
+  selected_rules: ["trim_whitespace", "remove_empty_rows"],
+  cleaning_summary: {},
+  rule_effects: [],
+  export_summary: {},
+  report_summary: {},
+  preview_snapshot: null,
+  storage_note: "Original uploaded files are not stored.",
+};
+
 describe("App", () => {
   beforeEach(() => {
     vi.mocked(validateUploadFile).mockReset();
@@ -348,6 +384,7 @@ describe("App", () => {
     vi.mocked(generateCleaningPreview).mockReset();
     vi.mocked(exportCleanedCsv).mockReset();
     vi.mocked(generateCleaningReport).mockReset();
+    vi.mocked(createSession).mockReset();
   });
 
   it("renders the DataPulse product foundation screen", () => {
@@ -596,7 +633,8 @@ describe("App", () => {
     expect(screen.getByRole("cell", { name: "Ari" })).toBeInTheDocument();
     expect(screen.getByText("Download cleaned CSV")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open HTML Cleaning Report" })).toBeInTheDocument();
-    expect(screen.getByText(/No saved history is created yet/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Save Cleaning Session" })).toBeInTheDocument();
+    expect(screen.getByText(/Original uploaded files are not stored/)).toBeInTheDocument();
     expect(vi.mocked(generateCleaningPreview)).toHaveBeenCalledWith(
       expect.any(File),
       expect.arrayContaining(["trim_whitespace"]),
@@ -616,6 +654,98 @@ describe("App", () => {
     expect(createObjectUrl).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:datapulse-cleaned");
+  });
+
+  it("saves current cleaning session metadata after cleaned preview", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(generateCleaningPreview).mockResolvedValue(cleaningPreviewResponse);
+    vi.mocked(createSession).mockResolvedValue(savedSessionDetail);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate Cleaned Preview" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Save Cleaning Session" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Cleaning Session" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Saved session #7 locally.")).toBeInTheDocument();
+    });
+    expect(vi.mocked(createSession)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source_filename: "messy.csv",
+        detected_extension: "csv",
+        selected_rules: expect.arrayContaining(["trim_whitespace"]),
+        preview_snapshot: cleaningPreviewResponse.cleaned_preview,
+      }),
+    );
+    const payload = vi.mocked(createSession).mock.calls[0][0];
+    expect(payload).not.toHaveProperty("file");
+    expect(payload.structure_summary).toMatchObject({ detected_column_count: 2 });
+    expect(payload.quality_summary).toMatchObject({ quality_score: 91 });
+  });
+
+  it("renders save session error state", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(generateCleaningPreview).mockResolvedValue(cleaningPreviewResponse);
+    vi.mocked(createSession).mockRejectedValue(new Error("backend down"));
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate Cleaned Preview" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Save Cleaning Session" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Cleaning Session" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Saving the cleaning session failed/)).toBeInTheDocument();
+    });
   });
 
   it("opens an HTML cleaning report after cleaned preview", async () => {

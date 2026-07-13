@@ -31,6 +31,11 @@ import {
   CleaningReportError,
   generateCleaningReport,
 } from "./api/cleaningReport";
+import {
+  SavedSessionsError,
+  createSession,
+  type SavedCleaningSessionCreate,
+} from "./api/savedSessions";
 
 type ProductSection = {
   title: string;
@@ -129,6 +134,59 @@ function issuesBySeverity(
   return issues.filter((issue) => issue.severity === severity);
 }
 
+function buildSessionPayload(
+  validationResult: FileUploadValidationResponse,
+  structureResult: StructureDetectionResult,
+  qualityResult: DataQualityResult,
+  cleaningResult: CleaningPreviewResult,
+  selectedRules: CleaningRuleCode[],
+): SavedCleaningSessionCreate {
+  return {
+    source_filename: validationResult.safe_filename,
+    detected_extension: validationResult.detected_extension,
+    content_type: validationResult.content_type,
+    file_size_bytes: validationResult.file_size_bytes,
+    selected_sheet_name: cleaningResult.selected_sheet_name,
+    structure_summary: {
+      structure_status: structureResult.structure_status,
+      detected_column_count: structureResult.detected_column_count,
+      sampled_row_count: structureResult.sampled_row_count,
+      preview_row_count: structureResult.preview_row_count,
+      has_detected_header: structureResult.has_detected_header,
+      header_row_index: structureResult.header_row_index,
+      delimiter_label: structureResult.delimiter?.delimiter_label ?? null,
+      selected_sheet_name: structureResult.selected_sheet_name,
+      warnings: structureResult.warnings,
+      column_names: structureResult.column_names,
+    },
+    quality_summary: {
+      quality_score: qualityResult.quality_score,
+      total_issue_count: qualityResult.total_issue_count,
+      severity_counts: qualityResult.severity_counts,
+      sampled_row_count: qualityResult.sampled_row_count,
+      detected_column_count: qualityResult.detected_column_count,
+      issues: qualityResult.issues,
+    },
+    selected_rules: selectedRules,
+    cleaning_summary: {
+      before_summary: cleaningResult.before_summary,
+      after_summary: cleaningResult.after_summary,
+      warnings: cleaningResult.warnings,
+    },
+    rule_effects: cleaningResult.rule_effects,
+    export_summary: {
+      format: "CSV",
+      csv_first_strategy: true,
+      original_file_modified: false,
+    },
+    report_summary: {
+      format: "HTML",
+      generated_from_metadata: true,
+    },
+    preview_snapshot: cleaningResult.cleaned_preview,
+  };
+}
+
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] =
@@ -146,16 +204,24 @@ function App() {
   const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
   const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
   const [reportSuccessMessage, setReportSuccessMessage] = useState<string | null>(null);
+  const [saveSessionErrorMessage, setSaveSessionErrorMessage] = useState<string | null>(null);
+  const [saveSessionSuccessMessage, setSaveSessionSuccessMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
   const [isGeneratingCleaningPreview, setIsGeneratingCleaningPreview] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isSavingSession, setIsSavingSession] = useState(false);
 
   const clearReportStatus = () => {
     setReportErrorMessage(null);
     setReportSuccessMessage(null);
+  };
+
+  const clearSaveSessionStatus = () => {
+    setSaveSessionErrorMessage(null);
+    setSaveSessionSuccessMessage(null);
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -174,6 +240,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -194,6 +261,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
     setSelectedSheetName("");
 
     try {
@@ -226,6 +294,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
 
     try {
       const result = await detectFileStructure(selectedFile);
@@ -260,6 +329,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
 
     try {
       setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
@@ -293,6 +363,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
 
     try {
       const result = await detectDataQuality(selectedFile, sheetName || undefined);
@@ -326,6 +397,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
   };
 
   const handleGenerateCleaningPreview = async () => {
@@ -344,6 +416,7 @@ function App() {
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
     clearReportStatus();
+    clearSaveSessionStatus();
 
     try {
       setCleaningResult(
@@ -357,6 +430,44 @@ function App() {
       );
     } finally {
       setIsGeneratingCleaningPreview(false);
+    }
+  };
+
+  const handleSaveCleaningSession = async () => {
+    if (
+      !validationResult ||
+      !structureResult ||
+      !qualityResult ||
+      !cleaningResult ||
+      cleaningResult.cleaning_status !== "preview_generated"
+    ) {
+      setSaveSessionErrorMessage("Generate a cleaned preview before saving a session.");
+      return;
+    }
+
+    setIsSavingSession(true);
+    setSaveSessionErrorMessage(null);
+    setSaveSessionSuccessMessage(null);
+
+    try {
+      const saved = await createSession(
+        buildSessionPayload(
+          validationResult,
+          structureResult,
+          qualityResult,
+          cleaningResult,
+          selectedRules,
+        ),
+      );
+      setSaveSessionSuccessMessage(`Saved session #${saved.id} locally.`);
+    } catch (error) {
+      setSaveSessionErrorMessage(
+        error instanceof SavedSessionsError
+          ? error.message
+          : "Saving the cleaning session failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsSavingSession(false);
     }
   };
 
@@ -1141,7 +1252,7 @@ function App() {
                         charts, and merged cell behavior are not preserved.
                       </p>
                     )}
-                    <p>No saved history is created yet.</p>
+                    <p>Use the saved session panel below to store metadata locally.</p>
                   </div>
                   <button
                     className="primary-action"
@@ -1156,6 +1267,32 @@ function App() {
                   )}
                   {reportErrorMessage && (
                     <p className="export-status error">{reportErrorMessage}</p>
+                  )}
+                </div>
+
+                <div className="save-session-panel" aria-label="Save cleaning session panel">
+                  <div>
+                    <span className="status-label">Saved locally</span>
+                    <h3>Save Cleaning Session</h3>
+                    <p>
+                      Save workflow metadata, quality summaries, selected rules, rule effects,
+                      and a small cleaned preview snapshot. Original uploaded files are not stored.
+                    </p>
+                    <p>History is local to this backend SQLite database.</p>
+                  </div>
+                  <button
+                    className="primary-action"
+                    type="button"
+                    disabled={isSavingSession}
+                    onClick={handleSaveCleaningSession}
+                  >
+                    {isSavingSession ? "Saving session..." : "Save Cleaning Session"}
+                  </button>
+                  {saveSessionSuccessMessage && (
+                    <p className="export-status success">{saveSessionSuccessMessage}</p>
+                  )}
+                  {saveSessionErrorMessage && (
+                    <p className="export-status error">{saveSessionErrorMessage}</p>
                   )}
                 </div>
               </div>
