@@ -81,6 +81,19 @@ DP-0006 adds deterministic cleaning rule selection and cleaned preview:
 
 DataPulse generates a preview only in DP-0006. It does not modify the original uploaded file and does not provide CSV download/export yet.
 
+DP-0007 adds cleaned CSV export and download:
+
+- `POST /files/export-cleaned-csv` multipart endpoint
+- CSV, TSV, TXT, XLSX, and compatible XLS cleaned export
+- Optional `sheet_name` form field for Excel selected-sheet export
+- Full uploaded CSV-like file export within the existing 10 MB upload limit
+- Selected Excel sheet values-only export as CSV
+- UTF-8 comma-delimited CSV output with safe quoting for commas, quotes, and newlines
+- Safe `Content-Disposition` filenames ending in `_cleaned.csv`
+- Frontend export panel, download action, loading state, success state, and error state
+
+Export is CSV-first. DataPulse does not export XLSX and does not preserve Excel formatting, formulas as formulas, merged cell behavior, charts, or pivot tables.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -101,8 +114,7 @@ DataPulse generates a preview only in DP-0006. It does not modify the original u
 - Excel sheet discovery and selected sheet raw preview exist for table-like workbooks
 - Data quality profiling exists and is sample-based
 - Deterministic cleaning preview exists and is sample-based
-- No cleaned CSV export yet
-- No full-file export yet
+- Cleaned CSV export exists for CSV-like files and selected Excel sheets
 - No HTML report yet
 - No saved history yet
 - No risky type conversion rules yet
@@ -240,5 +252,14 @@ Content-Type: multipart/form-data
 ```
 
 The cleaning preview endpoint accepts one `file` field, a `rules` form field containing selected rule codes, and an optional `sheet_name` for Excel workbooks. It returns before/after summaries, rule effects, warnings, and a bounded cleaned preview. It does not download/export CSV files and does not modify the original uploaded file.
+
+Cleaned CSV export:
+
+```http
+POST /files/export-cleaned-csv
+Content-Type: multipart/form-data
+```
+
+The cleaned CSV export endpoint accepts one `file` field, a `rules` form field containing selected rule codes, and an optional `sheet_name` for Excel workbooks. It returns a downloadable UTF-8 CSV file with a safe `_cleaned.csv` filename. CSV, TSV, and TXT exports process the uploaded file within the existing size limit. Excel exports process selected sheet values only.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.

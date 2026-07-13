@@ -62,6 +62,7 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0004: Excel workbook sheet discovery and selected sheet values-only preview.
 - DP-0005: deterministic sample-based data quality issue detection and column profiling.
 - DP-0006: deterministic cleaning rule selection and sample-based cleaned preview.
+- DP-0007: cleaned CSV export and frontend download workflow.
 
 ## Cleaning Model
 
@@ -72,3 +73,5 @@ Cleaning is rule-based and deterministic. Current DP-0006 preview rules include 
 CSV and Excel cleaning is inherently contextual. A tool can detect likely issues, but the user should confirm transformations because some "messy" values may be meaningful for a specific dataset.
 
 DP-0006 cleaned preview is bounded and sample-based. It can show likely cleaning effects, but it does not export CSV files, generate reports, save history, or claim the full file has been cleaned.
+
+DP-0007 exports cleaned CSV files from selected deterministic rules. CSV-like inputs are processed from the uploaded file within the existing size limit. Excel inputs export selected sheet values only; workbook formatting and spreadsheet-specific behavior are not preserved.

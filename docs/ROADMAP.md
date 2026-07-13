@@ -58,10 +58,14 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Export cleaned CSV from selected deterministic rules.
 - Keep export CSV-first.
 - Avoid claiming Excel formatting preservation.
+- Status: implemented for CSV-like files and selected Excel sheets.
 
-## DP-0008 - Reports and History
+## DP-0008 - HTML Cleaning Reports
 
 - Generate professional HTML cleaning reports.
+
+## DP-0009 - Saved Cleaning History
+
 - Add SQLite-backed cleaning history.
 
 ## Later Ideas

@@ -59,3 +59,11 @@ DP-0006 applies selected deterministic rules to a bounded sample and returns a c
 ## 2026-07-13 - Defer Risky Type Conversions
 
 DP-0006 avoids numeric, date, boolean, and missing-value conversion rules. Those transformations can change meaning, so they should be designed as separate explicit rules with stronger previews and reporting.
+
+## 2026-07-13 - CSV Export Before Reports
+
+DP-0007 implements CSV download before HTML reports or saved history. This keeps the product focused on the core analyst workflow: validate, inspect, clean deterministically, and export an analysis-ready CSV.
+
+## 2026-07-13 - Excel Export Is Values-Only CSV
+
+Excel inputs export selected sheet values as CSV. DataPulse does not preserve formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, or workbook styling.

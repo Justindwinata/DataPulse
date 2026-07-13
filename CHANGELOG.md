@@ -2,6 +2,26 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.7.0 - DP-0007 Cleaned CSV Export and Download
+
+### Added
+
+- Added cleaned CSV export service.
+- Added full uploaded CSV-like export within the existing upload size limit.
+- Added selected Excel sheet values-only export as CSV.
+- Added safe UTF-8 CSV rendering with comma delimiter and standard CSV quoting.
+- Added `POST /files/export-cleaned-csv` endpoint with safe `Content-Disposition` filename.
+- Added frontend cleaned CSV export client.
+- Added frontend export panel, Download Cleaned CSV action, loading state, success state, and error state.
+
+### Fixed
+
+- Hardened export edge cases for unsafe filenames, no-rules export, repeated form rules, all-empty columns, and CSV escaping.
+
+### Not Included
+
+- HTML reports, saved history, XLSX export, risky type conversion rules, AI/LLM cleaning, authentication, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.6.0 - DP-0006 Cleaning Rules Engine and Cleaned Preview
 
 ### Added

@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0006 adds deterministic cleaning rule selection and cleaned preview while keeping CSV download, full-file export, reports, and saved history out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0007 adds cleaned CSV export and download while keeping HTML reports and saved history out of scope.
 
 ## Repository Layout
 
@@ -35,6 +35,7 @@ The backend exposes API routes through FastAPI. Current endpoints:
 - `POST /files/detect-structure`
 - `POST /files/detect-quality`
 - `POST /files/apply-cleaning-preview`
+- `POST /files/export-cleaned-csv`
 
 Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
 
@@ -45,6 +46,8 @@ Excel structure detection logic lives in `datapulse_api.services.excel_structure
 Data quality profiling logic lives in `datapulse_api.services.data_quality`. It reuses structure detection metadata, reads bounded quality samples, and reports issues without modifying data. CSV-like files can be profiled directly. Excel files require `sheet_name` so the service profiles one selected table-like sheet at a time.
 
 Cleaning preview logic lives in `datapulse_api.services.cleaning_engine`. It reuses bounded table samples, applies only selected deterministic rules, returns before/after summaries, reports rule effects, and generates a capped cleaned preview. It does not store files, mutate uploads, or export cleaned CSV in DP-0006.
+
+Cleaned CSV export logic lives in `datapulse_api.services.cleaned_csv_export`. It applies the same deterministic selected rules and returns UTF-8 CSV bytes with safe quoting. CSV-like inputs are exported from the uploaded file within the existing 10 MB limit. Excel inputs export selected sheet values only and require `sheet_name`.
 
 Current upload validation rules:
 
@@ -93,9 +96,18 @@ Current cleaning preview rules:
 
 Cleaning preview is sample-based. Numeric conversion, date conversion, boolean conversion, and missing-value imputation are intentionally deferred because they can change data meaning.
 
+Current cleaned CSV export rules:
+
+- Output format is CSV only
+- Encoding is UTF-8
+- Delimiter is comma
+- CSV quoting is handled by Python's csv module
+- Exported filenames are sanitized and end with `_cleaned.csv`
+- Excel export is values-only and does not preserve workbook formatting
+
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, and scroll-safe preview tables. It does not display download actions or claims of Excel formatting preservation.
+The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, and scroll-safe preview tables. It does not display HTML report or saved history actions yet.
 
 ## Future Processing Flow
 
@@ -122,8 +134,8 @@ The frontend is a Vite React application written in TypeScript. The upload works
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0006
+- No deployment in DP-0007
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage
-- No cleaned CSV download, full-file export, report generation, or saved history
+- No HTML report generation or saved history
