@@ -67,7 +67,7 @@ const productSections: ProductSection[] = [
   },
   {
     title: "Cleaning Reports",
-    description: "Open HTML reports and save metadata-first local history.",
+    description: "Open live HTML reports and replay saved reports from local history.",
   },
 ];
 
@@ -686,13 +686,13 @@ function App() {
           <p className="description">
             Upload a CSV-like or Excel file, validate it, detect structure,
             analyze quality issues, apply deterministic cleaning rules, export CSV,
-            open a standalone HTML cleaning report, and save local session history.
+            open standalone HTML reports, and replay saved reports from local history.
           </p>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0009</span>
-          <strong>Local saved history active</strong>
-          <p>Workflow summaries can be saved locally as metadata-first cleaning sessions.</p>
+          <span className="status-label">DP-0010</span>
+          <strong>Saved report replay active</strong>
+          <p>Saved cleaning sessions can open metadata-based HTML reports without re-uploading files.</p>
         </div>
       </section>
 

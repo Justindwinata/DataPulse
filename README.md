@@ -118,6 +118,17 @@ DP-0009 adds local saved cleaning session history:
 
 Saved history stores source metadata, structure summary, quality summary, selected rules, cleaning summary, rule effects, export/report metadata, timestamps, and an optional small cleaned preview snapshot. Original uploaded files are not stored.
 
+DP-0010 adds saved-session HTML report replay:
+
+- `GET /sessions/{session_id}/report.html` endpoint for opening saved HTML reports from history
+- Metadata-based report composition from stored saved cleaning session summaries
+- Standalone HTML replay reports with saved session ID, source metadata, quality summary, structure summary, selected rules, cleaning summary, rule effects, export metadata, and limitations
+- Clear notice that original uploaded files are not stored and saved reports cannot reprocess the original file
+- Safe HTML escaping for stored filenames, metadata, issue text, rule effects, and preview snapshot values
+- Frontend Open Saved HTML Report action in saved session detail
+
+Saved report replay does not require the original file to be uploaded again. It is metadata-based and cannot regenerate full cleaned CSV output from history.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -130,6 +141,7 @@ Saved history stores source metadata, structure summary, quality summary, select
 8. Download cleaned CSV.
 9. Open a professional HTML cleaning report.
 10. Review saved cleaning history.
+11. Open saved HTML reports from local history.
 
 ## Current Limitations
 
@@ -141,7 +153,9 @@ Saved history stores source metadata, structure summary, quality summary, select
 - Cleaned CSV export exists for CSV-like files and selected Excel sheets
 - HTML cleaning report generation exists
 - Local SQLite saved cleaning history exists
+- Saved-session HTML report replay exists
 - Original uploaded files are not stored in history
+- Saved reports cannot reprocess original files
 - No cloud sync
 - No PDF export
 - No XLSX export
@@ -309,5 +323,13 @@ DELETE /sessions/{session_id}
 ```
 
 The sessions API stores and returns metadata-first cleaning history from completed workflows. It does not require the original upload, does not store uploaded source files, and keeps history local to the backend SQLite database.
+
+Saved session HTML report replay:
+
+```http
+GET /sessions/{session_id}/report.html
+```
+
+The saved report endpoint returns standalone `text/html; charset=utf-8` content generated from stored session metadata. It does not require file re-upload, does not reprocess the original file, and clearly states that original uploaded files are not stored.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules while preserving honest implementation-status metadata.

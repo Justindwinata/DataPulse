@@ -76,9 +76,17 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Let users list saved sessions, open detail, and delete local records.
 - Status: implemented with local SQLite persistence.
 
+## DP-0010 - Saved Session HTML Report Replay
+
+- Generate saved HTML reports from stored session metadata.
+- Avoid requiring original file re-upload.
+- Clearly state that saved report replay is metadata-based.
+- Add frontend Open Saved HTML Report action in History detail.
+- Status: implemented.
+
 ## Later Ideas
 
-- Saved session report replay from stored metadata.
+- Saved session restore flow for applying a previous rule set to a newly uploaded file.
 - Better type profiling for numeric and date columns.
 - Safer large-file limits and streaming previews.
 - PDF or richer report export options, if needed after the HTML report is stable.

@@ -2,6 +2,22 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.10.0 - DP-0010 Saved Session HTML Report Replay
+
+### Added
+
+- Added saved session report composition service for metadata-based replay reports.
+- Added saved session report document contracts.
+- Added standalone saved-session HTML renderer using safe escaping and no external scripts.
+- Added `GET /sessions/{session_id}/report.html` endpoint.
+- Added frontend saved session report client.
+- Added Open Saved HTML Report panel in saved session detail.
+- Added tests for saved report endpoint behavior, escaping, frontend blob opening, and error states.
+
+### Not Included
+
+- Original uploaded file storage, original file reprocessing from history, cloud sync, authentication, PDF export, XLSX export, risky type conversion rules, AI/LLM cleaning, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.9.0 - DP-0009 Saved Cleaning Sessions and Local History
 
 ### Added

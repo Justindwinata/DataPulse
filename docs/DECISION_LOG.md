@@ -87,3 +87,11 @@ Saved cleaning history uses local SQLite before authentication or cloud persiste
 ## 2026-07-14 - Sessions API Does Not Require Reupload
 
 Saving a cleaning session accepts structured workflow metadata instead of a multipart upload. This reinforces the boundary that history is audit metadata, not permanent file storage.
+
+## 2026-07-14 - Saved Reports Replay From Metadata
+
+DP-0010 generates saved HTML reports from stored session metadata. This lets users review prior cleaning decisions without re-uploading a file while preserving the product rule that original uploaded files are not stored.
+
+## 2026-07-14 - No Export Regeneration From History
+
+Saved session reports do not reprocess source data or regenerate full cleaned CSV output. Re-exporting should require a current uploaded file so DataPulse does not imply that metadata-only history contains the original dataset.

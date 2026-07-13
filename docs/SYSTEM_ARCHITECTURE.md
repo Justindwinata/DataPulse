@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0009 adds metadata-first saved cleaning sessions while keeping uploaded source-file storage, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0010 adds saved-session HTML report replay from stored metadata while keeping uploaded source-file storage, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
 
 ## Repository Layout
 
@@ -40,6 +40,7 @@ The backend exposes API routes through FastAPI. Current endpoints:
 - `POST /sessions`
 - `GET /sessions`
 - `GET /sessions/{session_id}`
+- `GET /sessions/{session_id}/report.html`
 - `DELETE /sessions/{session_id}`
 
 Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
@@ -57,6 +58,8 @@ Cleaned CSV export logic lives in `datapulse_api.services.cleaned_csv_export`. I
 Cleaning report composition lives in `datapulse_api.services.cleaning_report`. It reuses structure detection, data quality profiling, cleaning preview, and cleaned CSV export metadata to build one report document. HTML rendering lives in `datapulse_api.services.report_html`; it returns standalone HTML with inline CSS, no JavaScript, no external CDN assets, and escaped user-provided values.
 
 Saved cleaning session persistence lives in `datapulse_api.services.session_repository`. SQLite connection and schema initialization live in `datapulse_api.core.database`. The default local database path is `backend/data/datapulse.sqlite3`, and the database file is ignored by Git. Session history stores structured metadata and optional small preview snapshots; it does not store original uploaded files.
+
+Saved session report composition lives in `datapulse_api.services.saved_session_report`. It converts `SavedCleaningSessionDetail` metadata into a report document without requiring file re-upload or attempting full data reprocessing. Saved report rendering reuses `datapulse_api.services.report_html` styling and escaping utilities while clearly marking reports as metadata-based.
 
 Current upload validation rules:
 
@@ -131,11 +134,22 @@ Current saved history rules:
 - Original uploaded files are not stored
 - Stored fields include source metadata, selected sheet name, structure summary, quality summary, selected rules, cleaning summary, rule effects, export summary, report summary, optional cleaned preview snapshot, and timestamps
 - API supports create, list, detail, and delete operations
+- Saved session report replay is available at `GET /sessions/{session_id}/report.html`
+- Saved report replay is metadata-based and cannot reprocess the original file
 - Tests use temporary database paths instead of the local app database
+
+Current saved report replay rules:
+
+- Output format is standalone HTML
+- Content type is `text/html; charset=utf-8`
+- Reports include saved session ID, source filename, file type, selected sheet, session timestamps, replay timestamp, executive summary, structure metadata, quality metadata, selected rules, cleaning summary, rule effects, preview snapshot, export metadata, and limitations
+- Stored values are escaped before rendering
+- Original uploaded files are not required and are not stored
+- Saved reports cannot regenerate full cleaned CSV output from history
 
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, saved session creation, and scroll-safe preview tables. The History section lists saved sessions, displays metadata-first detail, shows optional saved preview snapshots, and supports local delete actions.
+The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, saved session creation, and scroll-safe preview tables. The History section lists saved sessions, displays metadata-first detail, shows optional saved preview snapshots, supports saved HTML report replay, and supports local delete actions.
 
 ## Future Processing Flow
 
@@ -149,6 +163,7 @@ The frontend is a Vite React application written in TypeScript. The upload works
 8. Export cleaned CSV.
 9. Generate an HTML report.
 10. Persist metadata-first session history in SQLite.
+11. Replay saved HTML reports from stored metadata.
 
 ## Architectural Boundaries
 
@@ -162,7 +177,7 @@ The frontend is a Vite React application written in TypeScript. The upload works
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0009
+- No deployment in DP-0010
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage
