@@ -1,7 +1,7 @@
 from io import BytesIO
 
 from fastapi import APIRouter, Form, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 
 from datapulse_api.models import (
     CleaningPreviewResult,
@@ -17,6 +17,7 @@ from datapulse_api.services.cleaned_csv_export import (
     CleanedCsvExportError,
     export_cleaned_csv,
 )
+from datapulse_api.services.cleaning_report import build_cleaning_report
 from datapulse_api.services.csv_structure_detection import detect_csv_like_structure
 from datapulse_api.services.data_quality import detect_data_quality
 from datapulse_api.services.excel_structure_detection import (
@@ -25,6 +26,7 @@ from datapulse_api.services.excel_structure_detection import (
 )
 from datapulse_api.services.file_validation import detect_extension, sanitize_filename
 from datapulse_api.services.file_validation import validate_uploaded_file_metadata
+from datapulse_api.services.report_html import render_cleaning_report_html
 
 router = APIRouter(prefix="/files", tags=["files"])
 
@@ -119,4 +121,28 @@ async def export_cleaned_csv_file(
         BytesIO(export.content),
         media_type=export.content_type,
         headers={"Content-Disposition": f'attachment; filename="{export.filename}"'},
+    )
+
+
+@router.post("/cleaning-report.html")
+async def cleaning_report_html(
+    file: UploadFile,
+    rules: list[str] | None = Form(default=None),
+    sheet_name: str | None = Form(default=None),
+) -> HTMLResponse:
+    content = await file.read()
+    try:
+        report = build_cleaning_report(
+            filename=file.filename or "uploaded_file",
+            content_type=file.content_type,
+            content=content,
+            rules=parse_cleaning_rules(rules),
+            sheet_name=sheet_name,
+        )
+    except CleanedCsvExportError as error:
+        raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
+
+    return HTMLResponse(
+        content=render_cleaning_report_html(report),
+        media_type="text/html; charset=utf-8",
     )
