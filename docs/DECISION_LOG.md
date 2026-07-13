@@ -75,3 +75,15 @@ DP-0008 generates standalone HTML reports before adding persistence. Users can r
 ## 2026-07-14 - Escape Report Data by Default
 
 HTML reports escape filenames, sheet names, column names, cell values, issue messages, and other dynamic values before rendering. Reports do not include external scripts or CDN assets.
+
+## 2026-07-14 - Metadata-First Saved History
+
+DP-0009 stores cleaning session summaries, selected rules, rule effects, export/report metadata, timestamps, and optional small cleaned preview snapshots. It does not store original uploaded files or full source datasets.
+
+## 2026-07-14 - Local SQLite Before Cloud Sync
+
+Saved cleaning history uses local SQLite before authentication or cloud persistence. This keeps the portfolio product useful for local review while avoiding account systems, cloud databases, and privacy claims that are not implemented.
+
+## 2026-07-14 - Sessions API Does Not Require Reupload
+
+Saving a cleaning session accepts structured workflow metadata instead of a multipart upload. This reinforces the boundary that history is audit metadata, not permanent file storage.

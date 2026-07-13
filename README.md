@@ -106,6 +106,18 @@ DP-0008 adds professional HTML cleaning reports:
 
 The HTML report summarizes the deterministic workflow. It does not save history, export PDF, export XLSX, preserve Excel formatting, or modify the original uploaded file.
 
+DP-0009 adds local saved cleaning session history:
+
+- SQLite-backed saved cleaning sessions at `backend/data/datapulse.sqlite3`
+- `POST /sessions` endpoint for saving metadata-first cleaning session summaries
+- `GET /sessions` endpoint for listing compact saved session summaries
+- `GET /sessions/{session_id}` endpoint for reviewing saved session detail
+- `DELETE /sessions/{session_id}` endpoint for removing local history records
+- Frontend Save Cleaning Session action after cleaned preview generation
+- Frontend History section with empty state, saved session list, detail view, delete action, and saved preview snapshot display
+
+Saved history stores source metadata, structure summary, quality summary, selected rules, cleaning summary, rule effects, export/report metadata, timestamps, and an optional small cleaned preview snapshot. Original uploaded files are not stored.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -128,7 +140,9 @@ The HTML report summarizes the deterministic workflow. It does not save history,
 - Deterministic cleaning preview exists and is sample-based
 - Cleaned CSV export exists for CSV-like files and selected Excel sheets
 - HTML cleaning report generation exists
-- No saved history yet
+- Local SQLite saved cleaning history exists
+- Original uploaded files are not stored in history
+- No cloud sync
 - No PDF export
 - No XLSX export
 - No risky type conversion rules yet
@@ -143,7 +157,7 @@ Excel support focuses on table-like sheets. DataPulse does not preserve workbook
 - Backend: Python, FastAPI, Pydantic, Pytest
 - Frontend: React, TypeScript, Vite, Vitest
 - Planned data processing: pandas, openpyxl for `.xlsx`, xlrd for `.xls`, Python csv module
-- Planned persistence: SQLite
+- Persistence: local SQLite for saved cleaning session metadata
 
 ## Local Setup
 
@@ -284,5 +298,16 @@ Content-Type: multipart/form-data
 ```
 
 The report endpoint accepts one `file` field, a `rules` form field containing selected rule codes, and an optional `sheet_name` for Excel workbooks. It returns standalone `text/html; charset=utf-8` content with structure, quality, cleaning, export, and limitation sections. User-provided values are HTML-escaped, and the report does not include external scripts or CDN assets.
+
+Saved cleaning sessions:
+
+```http
+POST /sessions
+GET /sessions
+GET /sessions/{session_id}
+DELETE /sessions/{session_id}
+```
+
+The sessions API stores and returns metadata-first cleaning history from completed workflows. It does not require the original upload, does not store uploaded source files, and keeps history local to the backend SQLite database.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules while preserving honest implementation-status metadata.

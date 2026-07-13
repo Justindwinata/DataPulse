@@ -2,6 +2,22 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.9.0 - DP-0009 Saved Cleaning Sessions and Local History
+
+### Added
+
+- Added saved cleaning session response models for create, summary, detail, and list workflows.
+- Added SQLite persistence foundation for local cleaning session metadata at `backend/data/datapulse.sqlite3`.
+- Added deterministic schema initialization and repository methods for create, list, get, and delete operations.
+- Added `POST /sessions`, `GET /sessions`, `GET /sessions/{session_id}`, and `DELETE /sessions/{session_id}` endpoints.
+- Added frontend saved sessions API client.
+- Added Save Cleaning Session workflow after cleaned preview generation.
+- Added History section with empty state, saved session list, detail view, delete action, and saved preview snapshot display.
+
+### Not Included
+
+- Original uploaded file storage, cloud sync, authentication, PDF export, XLSX export, risky type conversion rules, AI/LLM cleaning, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.8.0 - DP-0008 Professional HTML Cleaning Report
 
 ### Added

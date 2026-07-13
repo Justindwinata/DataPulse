@@ -64,6 +64,7 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0006: deterministic cleaning rule selection and sample-based cleaned preview.
 - DP-0007: cleaned CSV export and frontend download workflow.
 - DP-0008: standalone HTML cleaning report generation and frontend report opening workflow.
+- DP-0009: local SQLite saved cleaning session history, metadata-first session detail, and frontend History workflow.
 
 ## Cleaning Model
 
@@ -78,3 +79,5 @@ DP-0006 cleaned preview is bounded and sample-based. It can show likely cleaning
 DP-0007 exports cleaned CSV files from selected deterministic rules. CSV-like inputs are processed from the uploaded file within the existing size limit. Excel inputs export selected sheet values only; workbook formatting and spreadsheet-specific behavior are not preserved.
 
 DP-0008 generates standalone HTML reports from uploaded data and selected deterministic rules. Reports summarize structure, quality, selected rules, rule effects, cleaning summaries, cleaned preview, export notes, and limitations. Reports escape user-provided values and do not save history, export PDF, export XLSX, or preserve Excel formatting.
+
+DP-0009 stores saved cleaning session metadata in local SQLite. History records include source metadata, selected sheet name, structure summary, quality summary, selected rules, cleaning summary, rule effects, export/report metadata, timestamps, and an optional small cleaned preview snapshot. Original uploaded files are not stored, history is not cloud-synced, and saved records do not replace the need to review source data before future exports.

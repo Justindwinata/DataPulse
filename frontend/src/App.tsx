@@ -50,23 +50,23 @@ type ProductSection = {
 const productSections: ProductSection[] = [
   {
     title: "Messy File Upload",
-    description: "A planned intake flow for CSV, TSV, text tables, and Excel workbooks.",
+    description: "Validate CSV, TSV, text tables, and Excel workbooks before inspection.",
   },
   {
     title: "Structure Detection",
-    description: "Future profiling will identify headers, sheets, delimiters, and table shape.",
+    description: "Identify headers, sheets, delimiters, warnings, and table shape.",
   },
   {
     title: "Rule-Based Cleaning",
-    description: "Users will choose transparent deterministic rules before data is changed.",
+    description: "Choose transparent deterministic rules and inspect the cleaned preview.",
   },
   {
     title: "Cleaned CSV Export",
-    description: "Exports will focus on analysis-ready CSV output instead of spreadsheet styling.",
+    description: "Download analysis-ready CSV output instead of spreadsheet styling.",
   },
   {
     title: "Cleaning Reports",
-    description: "Reports will document validations, detected issues, and applied transformations.",
+    description: "Open HTML reports and save metadata-first local history.",
   },
 ];
 
@@ -650,13 +650,13 @@ function App() {
           <p className="description">
             Upload a CSV-like or Excel file, validate it, detect structure,
             analyze quality issues, apply deterministic cleaning rules, export CSV,
-            and open a standalone HTML cleaning report.
+            open a standalone HTML cleaning report, and save local session history.
           </p>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0008</span>
-          <strong>HTML cleaning report active</strong>
-          <p>Workflow summaries can be opened as standalone HTML reports.</p>
+          <span className="status-label">DP-0009</span>
+          <strong>Local saved history active</strong>
+          <p>Workflow summaries can be saved locally as metadata-first cleaning sessions.</p>
         </div>
       </section>
 
@@ -763,7 +763,7 @@ function App() {
                 <p className="future-note">
                   Structure detection available:{" "}
                   {canDetectStructure ? "yes for this file" : "not for this file yet"}.
-                  Cleaning, exports, reports, and saved history come later.
+                  Cleaning, exports, reports, and saved history unlock as the workflow progresses.
                 </p>
                 {canDetectStructure && (
                   <button
@@ -1574,7 +1574,7 @@ function App() {
 
       <section className="workflow" aria-labelledby="workflow-title">
         <div className="section-heading">
-          <p className="eyebrow">Future workflow</p>
+          <p className="eyebrow">Workflow</p>
           <h2 id="workflow-title">From messy table to documented CSV</h2>
         </div>
         <div className="feature-grid">

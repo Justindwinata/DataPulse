@@ -71,9 +71,14 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 ## DP-0009 - Saved Cleaning History
 
 - Add SQLite-backed cleaning history.
+- Store metadata-first session summaries without original uploaded files.
+- Let users save completed cleaning sessions.
+- Let users list saved sessions, open detail, and delete local records.
+- Status: implemented with local SQLite persistence.
 
 ## Later Ideas
 
+- Saved session report replay from stored metadata.
 - Better type profiling for numeric and date columns.
 - Safer large-file limits and streaming previews.
 - PDF or richer report export options, if needed after the HTML report is stable.
