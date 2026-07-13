@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0004 adds Excel sheet discovery and selected sheet raw preview while keeping cleaning and export out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0005 adds deterministic data quality profiling while keeping cleaning, export, reports, and saved history out of scope.
 
 ## Repository Layout
 
@@ -33,12 +33,15 @@ The backend exposes API routes through FastAPI. Current endpoints:
 - `GET /cleaning/capabilities`
 - `POST /files/validate-upload`
 - `POST /files/detect-structure`
+- `POST /files/detect-quality`
 
 Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
 
 CSV-like structure detection logic lives in `datapulse_api.services.csv_structure_detection`. It uses bounded byte sampling, Python's csv module, deterministic delimiter scoring, simple header heuristics, row-width normalization for preview display, and structured warnings.
 
 Excel structure detection logic lives in `datapulse_api.services.excel_structure_detection`. It uses `openpyxl` for `.xlsx`, `xlrd` for compatible `.xls`, bounded row sampling, deterministic header heuristics, selected sheet metadata, preview normalization, and structured warnings. Excel previews are values-only.
+
+Data quality profiling logic lives in `datapulse_api.services.data_quality`. It reuses structure detection metadata, reads bounded quality samples, and reports issues without modifying data. CSV-like files can be profiled directly. Excel files require `sheet_name` so the service profiles one selected table-like sheet at a time.
 
 Current upload validation rules:
 
@@ -66,9 +69,19 @@ Current Excel structure detection rules:
 - Detection rows are sampled and do not imply full workbook profiling
 - Formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, and styling are not preserved
 
+Current data quality profiling rules:
+
+- Supported inputs: `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`
+- Excel profiling requires a selected sheet name
+- Profiling is bounded and sample-based
+- Issue detection includes missing values, empty rows, empty columns, duplicate rows, duplicate headers, missing headers, messy headers, inconsistent row widths, leading/trailing whitespace, mixed type values, numeric-looking text, date-looking text, and high-missing columns
+- Column profiles include missing counts, missing percentage, inferred type, unique count, sample values, and issue codes
+- Quality score starts at 100 and subtracts deterministic points by severity: critical issues cost more than warnings, warnings cost more than info notes
+- Suggested cleaning rules are returned as future-rule metadata only
+
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. DP-0004 extends the upload workspace with Excel workbook discovery, a sheet selector, selected sheet preview, structure summary cards, warning panel, and a scroll-safe raw preview table. It does not display fake cleaned data or claim Excel formatting preservation.
+The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, issue summary cards, issue cards grouped by severity, and a scroll-safe column profile table. It does not display fake cleaned data, download actions, or claims of Excel formatting preservation.
 
 ## Future Processing Flow
 
@@ -95,8 +108,8 @@ The frontend is a Vite React application written in TypeScript. DP-0004 extends 
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0004
+- No deployment in DP-0005
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage
-- No cleaning engine or export generation
+- No cleaning engine, cleaned preview, export generation, report generation, or saved history

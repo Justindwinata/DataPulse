@@ -55,6 +55,19 @@ DP-0004 adds Excel sheet discovery and raw sheet preview:
 
 Excel previews are values-only. Formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, and workbook styling are not preserved.
 
+DP-0005 adds deterministic data quality profiling:
+
+- `POST /files/detect-quality` multipart endpoint
+- CSV, TSV, TXT, XLSX, and compatible XLS quality profiling
+- Optional `sheet_name` form field for Excel selected-sheet profiling
+- Clear sheet-selection-required response when Excel quality analysis is requested without a sheet
+- Sample-based issue detection for missing values, empty rows, empty columns, duplicate rows, duplicate headers, missing headers, messy headers, inconsistent row widths, whitespace, mixed type patterns, numeric-looking text, date-looking text, and high-missing columns
+- Column-level profiles with missing counts, missing percentages, inferred type, unique count, sample values, and issue codes
+- Transparent heuristic quality score based on issue severity
+- Frontend quality summary cards, issue cards, and column profile table
+
+DataPulse reports suggested future cleaning rules, but it does not apply them yet. No data is modified in DP-0005.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -73,8 +86,9 @@ Excel previews are values-only. Formatting, formulas as formulas, merged cell be
 - File upload validation exists, but files are not parsed or stored permanently
 - CSV/TSV/TXT structure detection and bounded raw preview exist
 - Excel sheet discovery and selected sheet raw preview exist for table-like workbooks
-- No full data quality profiling yet
+- Data quality profiling exists and is sample-based
 - No cleaning engine yet
+- No cleaned preview yet
 - No cleaned CSV export yet
 - No HTML report yet
 - No saved history yet
@@ -194,5 +208,14 @@ For Excel workbooks, the same endpoint supports two modes:
 
 - Without `sheet_name`: returns workbook sheet discovery metadata.
 - With `sheet_name`: returns selected sheet header/column metadata, warnings, and bounded raw preview rows.
+
+Data quality profiling:
+
+```http
+POST /files/detect-quality
+Content-Type: multipart/form-data
+```
+
+The quality endpoint accepts one `file` field and an optional `sheet_name` field for Excel workbooks. It returns issue summaries, severity counts, a heuristic quality score, column-level profiles, and suggested future cleaning rules. Suggested rules are metadata only; DataPulse does not clean, export, or persist the uploaded file in DP-0005.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.

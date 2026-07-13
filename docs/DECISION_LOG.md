@@ -43,3 +43,11 @@ DP-0004 treats Excel workbooks as sources of table-like values. It does not pres
 ## 2026-07-13 - Sheet Selection Before Excel Preview
 
 Excel workbook discovery and sheet preview are separate steps. The first call returns sheet metadata; a second call with `sheet_name` returns bounded raw preview for the selected sheet.
+
+## 2026-07-13 - Quality Profiling Before Cleaning
+
+DP-0005 detects data quality issues before introducing any cleaning engine. The service reports issues, column profiles, suggested future cleaning rules, and a transparent heuristic score, but it does not modify uploaded data.
+
+## 2026-07-13 - Heuristic Quality Score Is Sample-Based
+
+The quality score starts at 100 and subtracts deterministic points by issue severity. It is a practical diagnostic signal for the sampled data, not a scientific or full-file guarantee.

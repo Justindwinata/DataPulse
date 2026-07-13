@@ -2,6 +2,23 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.5.0 - DP-0005 Data Quality Issue Detection
+
+### Added
+
+- Added data quality profiling response models and stable issue severity contracts.
+- Added deterministic backend profiling service for CSV-like files and selected Excel sheets.
+- Added `POST /files/detect-quality` endpoint with optional `sheet_name`.
+- Added sample-based detection for missing values, empty rows, empty columns, duplicate rows, duplicate column names, missing column names, messy column names, inconsistent row widths, leading/trailing whitespace, mixed type values, numeric-looking text, date-looking text, and high-missing columns.
+- Added column-level profiles with inferred type, missing counts, missing percentage, unique count, sample values, and issue codes.
+- Added transparent heuristic quality score based on issue severity.
+- Added frontend data quality client.
+- Added quality summary cards, issue cards grouped by severity, and column profile table.
+
+### Not Included
+
+- Cleaning engine, cleaned preview, cleaned CSV export, HTML reports, saved history, AI/LLM cleaning, authentication, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.4.0 - DP-0004 Excel Sheet Detection and Raw Preview
 
 ### Added

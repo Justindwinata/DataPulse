@@ -36,14 +36,23 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Add frontend sheet selector and selected sheet preview.
 - Status: implemented for table-like Excel sheets.
 
-## DP-0005 - Rule-Based Cleaning Engine
+## DP-0005 - Data Quality Issue Detection
+
+- Detect common data quality issues from bounded samples.
+- Return issue severity counts and a transparent heuristic quality score.
+- Return column-level profiles with inferred types and missing-value metrics.
+- Suggest future cleaning rules without applying them.
+- Add frontend issue summary and column profile UI.
+- Status: implemented for CSV, TSV, TXT, and selected Excel sheets.
+
+## DP-0006 - Rule-Based Cleaning Engine
 
 - Apply deterministic cleaning rules.
 - Track before/after summaries.
 - Keep transformations transparent and user-selected.
 - Add cleaned preview.
 
-## DP-0006 - Export, Reports, and History
+## DP-0007 - Export, Reports, and History
 
 - Export cleaned CSV.
 - Generate professional HTML cleaning reports.

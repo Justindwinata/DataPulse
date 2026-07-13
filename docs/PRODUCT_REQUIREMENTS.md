@@ -54,6 +54,14 @@ DP-0001 implements the engineering foundation only:
 
 DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV export, HTML reports, SQLite history, authentication, deployment, AI features, OCR, PDF support, or image processing.
 
+## Current Implemented Milestones
+
+- DP-0001: product foundation, backend/frontend scaffolding, health check, capabilities metadata, and domain contracts.
+- DP-0002: upload validation for CSV, TSV, TXT, XLSX, and XLS files.
+- DP-0003: CSV, TSV, and TXT structure detection with bounded raw preview.
+- DP-0004: Excel workbook sheet discovery and selected sheet values-only preview.
+- DP-0005: deterministic sample-based data quality issue detection and column profiling.
+
 ## Cleaning Model
 
 Cleaning will be rule-based and deterministic. Example future rules include trimming whitespace, removing empty rows, removing duplicate rows, dropping fully empty columns, standardizing column names, promoting a detected header row, generating missing column names, normalizing text casing, and converting numeric or date columns.
@@ -61,3 +69,5 @@ Cleaning will be rule-based and deterministic. Example future rules include trim
 ## Limitations
 
 CSV and Excel cleaning is inherently contextual. A tool can detect likely issues, but the user should confirm transformations because some "messy" values may be meaningful for a specific dataset.
+
+DP-0005 quality profiling is bounded and sample-based. It can report likely issues and suggested future cleaning rules, but it does not clean data, create a cleaned preview, export CSV files, generate reports, or save history.
