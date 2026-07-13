@@ -1,4 +1,7 @@
-from fastapi import APIRouter, Form, UploadFile
+from io import BytesIO
+
+from fastapi import APIRouter, Form, HTTPException, UploadFile
+from fastapi.responses import StreamingResponse
 
 from datapulse_api.models import (
     CleaningPreviewResult,
@@ -9,6 +12,10 @@ from datapulse_api.models import (
 from datapulse_api.services.cleaning_engine import (
     generate_cleaning_preview,
     parse_cleaning_rules,
+)
+from datapulse_api.services.cleaned_csv_export import (
+    CleanedCsvExportError,
+    export_cleaned_csv,
 )
 from datapulse_api.services.csv_structure_detection import detect_csv_like_structure
 from datapulse_api.services.data_quality import detect_data_quality
@@ -87,4 +94,29 @@ async def apply_cleaning_preview(
         content=content,
         rules=parse_cleaning_rules(rules),
         sheet_name=sheet_name,
+    )
+
+
+@router.post("/export-cleaned-csv")
+async def export_cleaned_csv_file(
+    file: UploadFile,
+    rules: list[str] | None = Form(default=None),
+    sheet_name: str | None = Form(default=None),
+) -> StreamingResponse:
+    content = await file.read()
+    try:
+        export = export_cleaned_csv(
+            filename=file.filename or "uploaded_file",
+            content_type=file.content_type,
+            content=content,
+            rules=parse_cleaning_rules(rules),
+            sheet_name=sheet_name,
+        )
+    except CleanedCsvExportError as error:
+        raise HTTPException(status_code=400, detail={"code": error.code, "message": error.message}) from error
+
+    return StreamingResponse(
+        BytesIO(export.content),
+        media_type=export.content_type,
+        headers={"Content-Disposition": f'attachment; filename="{export.filename}"'},
     )
