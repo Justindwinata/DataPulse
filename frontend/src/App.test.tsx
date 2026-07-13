@@ -10,6 +10,10 @@ import {
   detectDataQuality,
   type DataQualityResult,
 } from "./api/dataQuality";
+import {
+  generateCleaningPreview,
+  type CleaningPreviewResult,
+} from "./api/cleaningPreview";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
@@ -33,6 +37,14 @@ vi.mock("./api/dataQuality", async (importOriginal) => {
   return {
     ...actual,
     detectDataQuality: vi.fn(),
+  };
+});
+
+vi.mock("./api/cleaningPreview", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api/cleaningPreview")>();
+  return {
+    ...actual,
+    generateCleaningPreview: vi.fn(),
   };
 });
 
@@ -194,6 +206,15 @@ const qualityResponse: DataQualityResult = {
       suggested_cleaning_rule: null,
     },
     {
+      code: "leading_trailing_whitespace",
+      title: "Leading or trailing whitespace detected",
+      message: "Some sampled values contain whitespace around the visible value.",
+      severity: "info",
+      affected_columns: ["name"],
+      affected_row_count: 1,
+      suggested_cleaning_rule: "trim_whitespace",
+    },
+    {
       code: "numeric_values_as_text",
       title: "Possible numeric columns stored as text",
       message: "Some sampled columns contain numeric-looking text values.",
@@ -239,11 +260,74 @@ const excelQualityResponse: DataQualityResult = {
   selected_sheet_name: "Sales",
 };
 
+const cleaningPreviewResponse: CleaningPreviewResult = {
+  cleaning_status: "preview_generated",
+  original_filename: "messy.csv",
+  safe_filename: "messy.csv",
+  detected_extension: "csv",
+  selected_sheet_name: null,
+  applied_rules: ["trim_whitespace", "remove_empty_rows"],
+  before_summary: {
+    row_count: 3,
+    column_count: 2,
+    empty_rows_count: 1,
+    duplicate_rows_count: 0,
+    empty_columns_count: 0,
+  },
+  after_summary: {
+    row_count: 2,
+    column_count: 2,
+    removed_empty_rows_count: 1,
+    removed_duplicate_rows_count: 0,
+    dropped_empty_columns_count: 0,
+    renamed_columns_count: 0,
+  },
+  rule_effects: [
+    {
+      rule: "trim_whitespace",
+      label: "Trim whitespace",
+      status: "applied",
+      message: "Trimmed whitespace in 1 sampled cells.",
+      affected_rows: 1,
+      affected_columns: 1,
+    },
+    {
+      rule: "remove_empty_rows",
+      label: "Remove empty rows",
+      status: "applied",
+      message: "Removed 1 empty rows from the preview sample.",
+      affected_rows: 1,
+      affected_columns: 0,
+    },
+  ],
+  cleaned_preview: {
+    columns: ["name", "amount"],
+    rows: [["Ari", "1200"]],
+  },
+  warnings: [
+    {
+      code: "sample_based_preview",
+      message: "Cleaning preview is generated from a bounded sample.",
+      severity: "info",
+    },
+  ],
+  next_step: "download_cleaned_csv",
+};
+
+const excelCleaningPreviewResponse: CleaningPreviewResult = {
+  ...cleaningPreviewResponse,
+  original_filename: "workbook.xlsx",
+  safe_filename: "workbook.xlsx",
+  detected_extension: "xlsx",
+  selected_sheet_name: "Sales",
+};
+
 describe("App", () => {
   beforeEach(() => {
     vi.mocked(validateUploadFile).mockReset();
     vi.mocked(detectFileStructure).mockReset();
     vi.mocked(detectDataQuality).mockReset();
+    vi.mocked(generateCleaningPreview).mockReset();
   });
 
   it("renders the DataPulse product foundation screen", () => {
@@ -441,7 +525,53 @@ describe("App", () => {
     expect(screen.getByRole("cell", { name: "amount" })).toBeInTheDocument();
     expect(screen.getByText(/DataPulse has not modified your file yet/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
-    expect(screen.queryByText(/cleaned preview/i)).not.toBeInTheDocument();
+  });
+
+  it("renders cleaning rules and cleaned preview after quality analysis", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(generateCleaningPreview).mockResolvedValue(cleaningPreviewResponse);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Select rules and preview cleaned data")).toBeInTheDocument();
+    });
+    expect(screen.getAllByText("Recommended").length).toBeGreaterThan(0);
+    expect(screen.getByLabelText(/Trim whitespace/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Rows before")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Rule effects")).toBeInTheDocument();
+    expect(screen.getByRole("region", { name: "Cleaned preview table" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Ari" })).toBeInTheDocument();
+    expect(screen.getByText(/Download\/export will be available/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
+    expect(vi.mocked(generateCleaningPreview)).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.arrayContaining(["trim_whitespace"]),
+      undefined,
+    );
   });
 
   it("runs quality analysis for the selected Excel sheet", async () => {
@@ -478,6 +608,87 @@ describe("App", () => {
       expect(screen.getByText("Quality score")).toBeInTheDocument();
     });
     expect(vi.mocked(detectDataQuality)).toHaveBeenLastCalledWith(expect.any(File), "Sales");
+  });
+
+  it("runs cleaning preview for the selected Excel sheet", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(excelAcceptedResponse);
+    vi.mocked(detectFileStructure)
+      .mockResolvedValueOnce(workbookDiscoveryResponse)
+      .mockResolvedValueOnce(excelPreviewResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(excelQualityResponse);
+    vi.mocked(generateCleaningPreview).mockResolvedValue(excelCleaningPreviewResponse);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["workbook"], "workbook.xlsx")],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Preview selected sheet" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Preview selected sheet" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate Cleaned Preview" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cleaned preview")).toBeInTheDocument();
+    });
+    expect(vi.mocked(generateCleaningPreview)).toHaveBeenLastCalledWith(
+      expect.any(File),
+      expect.any(Array),
+      "Sales",
+    );
+  });
+
+  it("renders cleaning preview backend error state", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(generateCleaningPreview).mockRejectedValue(new Error("backend down"));
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate Cleaned Preview" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Cleaning preview request failed")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Confirm the backend is running/)).toBeInTheDocument();
   });
 
   it("renders quality backend error state", async () => {

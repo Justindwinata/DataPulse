@@ -156,9 +156,7 @@ def _preview_from_structure(
     after = CleaningSummaryAfter(
         row_count=len(current_rows),
         column_count=len(current_columns),
-        removed_empty_rows_count=before.row_count - len(current_rows)
-        if CleaningRuleCode.REMOVE_EMPTY_ROWS in rules
-        else 0,
+        removed_empty_rows_count=_effect_rows(effects, CleaningRuleCode.REMOVE_EMPTY_ROWS),
         removed_duplicate_rows_count=_effect_rows(effects, CleaningRuleCode.REMOVE_DUPLICATE_ROWS),
         dropped_empty_columns_count=_effect_columns(effects, CleaningRuleCode.DROP_EMPTY_COLUMNS),
         renamed_columns_count=max(

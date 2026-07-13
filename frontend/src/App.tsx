@@ -17,6 +17,12 @@ import {
   type DataQualityResult,
   type IssueSeverity,
 } from "./api/dataQuality";
+import {
+  CleaningPreviewError,
+  generateCleaningPreview,
+  type CleaningPreviewResult,
+  type CleaningRuleCode,
+} from "./api/cleaningPreview";
 
 type ProductSection = {
   title: string;
@@ -50,6 +56,49 @@ const acceptedFormats = ".csv,.tsv,.txt,.xlsx,.xls";
 const csvLikeExtensions = new Set(["csv", "tsv", "txt"]);
 const excelExtensions = new Set(["xlsx", "xls"]);
 const issueSeverityOrder: IssueSeverity[] = ["critical", "warning", "info"];
+const cleaningRules: Array<{
+  code: CleaningRuleCode;
+  label: string;
+  description: string;
+  issueCodes: string[];
+}> = [
+  {
+    code: "trim_whitespace",
+    label: "Trim whitespace",
+    description: "Remove leading and trailing spaces from sampled text cells.",
+    issueCodes: ["leading_trailing_whitespace"],
+  },
+  {
+    code: "remove_empty_rows",
+    label: "Remove empty rows",
+    description: "Remove rows where every sampled cell is empty.",
+    issueCodes: ["empty_rows"],
+  },
+  {
+    code: "remove_duplicate_rows",
+    label: "Remove duplicate rows",
+    description: "Keep the first exact row and remove repeated sampled rows.",
+    issueCodes: ["duplicate_rows"],
+  },
+  {
+    code: "drop_empty_columns",
+    label: "Drop empty columns",
+    description: "Remove columns with no values in the sampled rows.",
+    issueCodes: ["empty_columns"],
+  },
+  {
+    code: "standardize_column_names",
+    label: "Standardize column names",
+    description: "Convert column names to lowercase snake_case.",
+    issueCodes: ["messy_column_names", "duplicate_column_names"],
+  },
+  {
+    code: "generate_missing_column_names",
+    label: "Generate missing column names",
+    description: "Fill missing headers with generated column names.",
+    issueCodes: ["missing_column_names"],
+  },
+];
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -78,13 +127,17 @@ function App() {
     useState<FileUploadValidationResponse | null>(null);
   const [structureResult, setStructureResult] = useState<StructureDetectionResult | null>(null);
   const [qualityResult, setQualityResult] = useState<DataQualityResult | null>(null);
+  const [cleaningResult, setCleaningResult] = useState<CleaningPreviewResult | null>(null);
+  const [selectedRules, setSelectedRules] = useState<CleaningRuleCode[]>([]);
   const [selectedSheetName, setSelectedSheetName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [structureErrorMessage, setStructureErrorMessage] = useState<string | null>(null);
   const [qualityErrorMessage, setQualityErrorMessage] = useState<string | null>(null);
+  const [cleaningErrorMessage, setCleaningErrorMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
+  const [isGeneratingCleaningPreview, setIsGeneratingCleaningPreview] = useState(false);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -92,10 +145,13 @@ function App() {
     setValidationResult(null);
     setStructureResult(null);
     setQualityResult(null);
+    setCleaningResult(null);
+    setSelectedRules([]);
     setSelectedSheetName("");
     setErrorMessage(null);
     setStructureErrorMessage(null);
     setQualityErrorMessage(null);
+    setCleaningErrorMessage(null);
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -111,6 +167,8 @@ function App() {
     setValidationResult(null);
     setStructureResult(null);
     setQualityResult(null);
+    setCleaningResult(null);
+    setSelectedRules([]);
     setSelectedSheetName("");
 
     try {
@@ -135,8 +193,11 @@ function App() {
     setIsDetectingStructure(true);
     setStructureErrorMessage(null);
     setQualityErrorMessage(null);
+    setCleaningErrorMessage(null);
     setStructureResult(null);
     setQualityResult(null);
+    setCleaningResult(null);
+    setSelectedRules([]);
 
     try {
       const result = await detectFileStructure(selectedFile);
@@ -164,7 +225,10 @@ function App() {
     setIsDetectingStructure(true);
     setStructureErrorMessage(null);
     setQualityErrorMessage(null);
+    setCleaningErrorMessage(null);
     setQualityResult(null);
+    setCleaningResult(null);
+    setSelectedRules([]);
 
     try {
       setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
@@ -191,10 +255,21 @@ function App() {
 
     setIsAnalyzingQuality(true);
     setQualityErrorMessage(null);
+    setCleaningErrorMessage(null);
     setQualityResult(null);
+    setCleaningResult(null);
+    setSelectedRules([]);
 
     try {
-      setQualityResult(await detectDataQuality(selectedFile, sheetName || undefined));
+      const result = await detectDataQuality(selectedFile, sheetName || undefined);
+      setQualityResult(result);
+      setSelectedRules(
+        cleaningRules
+          .filter((rule) =>
+            result.issues.some((issue) => rule.issueCodes.includes(issue.code)),
+          )
+          .map((rule) => rule.code),
+      );
     } catch (error) {
       setQualityErrorMessage(
         error instanceof DataQualityError
@@ -206,6 +281,45 @@ function App() {
     }
   };
 
+  const handleRuleToggle = (rule: CleaningRuleCode) => {
+    setSelectedRules((currentRules) =>
+      currentRules.includes(rule)
+        ? currentRules.filter((currentRule) => currentRule !== rule)
+        : [...currentRules, rule],
+    );
+    setCleaningResult(null);
+    setCleaningErrorMessage(null);
+  };
+
+  const handleGenerateCleaningPreview = async () => {
+    if (!selectedFile || !qualityResult || qualityResult.quality_status !== "profiled") {
+      setCleaningErrorMessage("Analyze data quality before generating a cleaned preview.");
+      return;
+    }
+
+    const sheetName = excelExtensions.has(qualityResult.detected_extension)
+      ? qualityResult.selected_sheet_name ?? selectedSheetName
+      : undefined;
+
+    setIsGeneratingCleaningPreview(true);
+    setCleaningErrorMessage(null);
+    setCleaningResult(null);
+
+    try {
+      setCleaningResult(
+        await generateCleaningPreview(selectedFile, selectedRules, sheetName || undefined),
+      );
+    } catch (error) {
+      setCleaningErrorMessage(
+        error instanceof CleaningPreviewError
+          ? error.message
+          : "Cleaning preview failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsGeneratingCleaningPreview(false);
+    }
+  };
+
   const canDetectStructure =
     validationResult?.validation_status === "accepted" &&
     (csvLikeExtensions.has(validationResult.detected_extension) ||
@@ -214,6 +328,7 @@ function App() {
     validationResult?.validation_status === "accepted" &&
     ["xlsx", "xls"].includes(validationResult.detected_extension);
   const affectedColumns = qualityResult ? uniqueAffectedColumns(qualityResult.issues) : [];
+  const detectedIssueCodes = new Set(qualityResult?.issues.map((issue) => issue.code) ?? []);
 
   return (
     <main className="app-shell">
@@ -694,12 +809,183 @@ function App() {
             </div>
 
             <p className="future-note">
-              Cleaning rules will be available in the next milestone. DataPulse has not
-              modified your file yet.
+              Select cleaning rules below to generate a sample-based cleaned preview.
+              DataPulse has not modified your file yet.
             </p>
           </div>
         )}
       </section>
+
+      {qualityResult && qualityResult.quality_status === "profiled" && (
+        <section className="cleaning-workspace" aria-labelledby="cleaning-title">
+          <div className="section-heading">
+            <p className="eyebrow">Cleaning rules</p>
+            <h2 id="cleaning-title">Select rules and preview cleaned data</h2>
+          </div>
+
+          <div className="cleaning-result">
+            <div className="rule-grid" aria-label="Cleaning rule selection">
+              {cleaningRules.map((rule) => {
+                const isRecommended = rule.issueCodes.some((issueCode) =>
+                  detectedIssueCodes.has(issueCode),
+                );
+                return (
+                  <label className="rule-card" key={rule.code}>
+                    <input
+                      type="checkbox"
+                      checked={selectedRules.includes(rule.code)}
+                      onChange={() => handleRuleToggle(rule.code)}
+                    />
+                    <span>
+                      <strong>{rule.label}</strong>
+                      {isRecommended && <em>Recommended</em>}
+                    </span>
+                    <p>{rule.description}</p>
+                  </label>
+                );
+              })}
+            </div>
+
+            <button
+              className="secondary-action"
+              type="button"
+              disabled={isGeneratingCleaningPreview}
+              onClick={handleGenerateCleaningPreview}
+            >
+              {isGeneratingCleaningPreview
+                ? "Generating cleaned preview..."
+                : "Generate Cleaned Preview"}
+            </button>
+
+            {cleaningErrorMessage && (
+              <div className="result-card rejected compact-result">
+                <span className="status-label">Error</span>
+                <h3>Cleaning preview request failed</h3>
+                <p>{cleaningErrorMessage}</p>
+              </div>
+            )}
+
+            {cleaningResult && cleaningResult.cleaning_status !== "preview_generated" && (
+              <div className="result-card rejected compact-result">
+                <span className="status-label">
+                  {cleaningResult.cleaning_status === "sheet_selection_required"
+                    ? "Sheet required"
+                    : "Rejected"}
+                </span>
+                <h3>{cleaningResult.safe_filename}</h3>
+                {cleaningResult.warnings.map((warning) => (
+                  <p key={warning.code}>{warning.message}</p>
+                ))}
+              </div>
+            )}
+
+            {cleaningResult && cleaningResult.cleaning_status === "preview_generated" && (
+              <div className="cleaned-preview">
+                <div className="summary-grid">
+                  <article>
+                    <span>Rows before</span>
+                    <strong>{cleaningResult.before_summary.row_count}</strong>
+                    <p>{cleaningResult.before_summary.empty_rows_count} empty rows</p>
+                  </article>
+                  <article>
+                    <span>Rows after</span>
+                    <strong>{cleaningResult.after_summary.row_count}</strong>
+                    <p>{cleaningResult.after_summary.removed_empty_rows_count} removed</p>
+                  </article>
+                  <article>
+                    <span>Columns before</span>
+                    <strong>{cleaningResult.before_summary.column_count}</strong>
+                    <p>{cleaningResult.before_summary.empty_columns_count} empty columns</p>
+                  </article>
+                  <article>
+                    <span>Columns after</span>
+                    <strong>{cleaningResult.after_summary.column_count}</strong>
+                    <p>{cleaningResult.after_summary.dropped_empty_columns_count} dropped</p>
+                  </article>
+                </div>
+
+                <div className="summary-grid compact-summary">
+                  <article>
+                    <span>Duplicates</span>
+                    <strong>{cleaningResult.after_summary.removed_duplicate_rows_count}</strong>
+                    <p>removed rows</p>
+                  </article>
+                  <article>
+                    <span>Renamed</span>
+                    <strong>{cleaningResult.after_summary.renamed_columns_count}</strong>
+                    <p>columns changed</p>
+                  </article>
+                </div>
+
+                {cleaningResult.warnings.length > 0 && (
+                  <div className="warning-panel">
+                    <h3>Cleaning preview notes</h3>
+                    <ul>
+                      {cleaningResult.warnings.map((warning) => (
+                        <li key={warning.code}>
+                          <strong>{warning.code}</strong>
+                          <span>{warning.message}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <div className="issue-panel">
+                  <h3>Rule effects</h3>
+                  <div className="issue-card-grid">
+                    {cleaningResult.rule_effects.map((effect) => (
+                      <article className={`issue-card ${effect.status}`} key={effect.rule}>
+                        <span>{effect.status}</span>
+                        <h5>{effect.label}</h5>
+                        <p>{effect.message}</p>
+                        <p>
+                          <strong>Rows:</strong> {effect.affected_rows}
+                        </p>
+                        <p>
+                          <strong>Columns:</strong> {effect.affected_columns}
+                        </p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="preview-panel">
+                  <div className="preview-heading">
+                    <h3>Cleaned preview</h3>
+                    <p>Preview rows are sample-based and capped at 20.</p>
+                  </div>
+                  <div className="table-scroll" role="region" aria-label="Cleaned preview table">
+                    <table>
+                      <thead>
+                        <tr>
+                          {cleaningResult.cleaned_preview.columns.map((column) => (
+                            <th key={column}>{column}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cleaningResult.cleaned_preview.rows.map((row, rowIndex) => (
+                          <tr key={`${row.join("|")}-${rowIndex}`}>
+                            {row.map((cell, cellIndex) => (
+                              <td key={`${cellIndex}-${cell}`}>{cell}</td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <p className="future-note">
+                  DataPulse has not modified your original file. Download/export will be
+                  available in the next milestone.
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="workflow" aria-labelledby="workflow-title">
         <div className="section-heading">

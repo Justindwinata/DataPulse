@@ -121,6 +121,8 @@ def test_multiple_rules_applied_together() -> None:
     assert result.cleaned_preview.columns == ["customer_name"]
     assert result.cleaned_preview.rows == [["Ari"]]
     assert result.after_summary.row_count == 1
+    assert result.after_summary.removed_empty_rows_count == 1
+    assert result.after_summary.removed_duplicate_rows_count == 1
     assert len(result.rule_effects) == 5
 
 

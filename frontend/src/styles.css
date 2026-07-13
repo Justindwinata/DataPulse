@@ -31,6 +31,7 @@ body {
 .upload-workspace,
 .structure-workspace,
 .quality-workspace,
+.cleaning-workspace,
 .workflow {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
@@ -96,6 +97,7 @@ h1 {
 .structure-result,
 .quality-empty,
 .quality-result,
+.cleaning-result,
 .feature-card {
   border: 1px solid #d7e0e4;
   border-radius: 8px;
@@ -329,7 +331,8 @@ dd {
 .structure-empty,
 .structure-result,
 .quality-empty,
-.quality-result {
+.quality-result,
+.cleaning-result {
   padding: 22px;
 }
 
@@ -340,6 +343,10 @@ dd {
 }
 
 .quality-workspace {
+  padding: 12px 0 44px;
+}
+
+.cleaning-workspace {
   padding: 12px 0 44px;
 }
 
@@ -381,6 +388,65 @@ dd {
 
 .quality-summary {
   margin-bottom: 22px;
+}
+
+.compact-summary {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.rule-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.rule-card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid #d7e0e4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 14px;
+  cursor: pointer;
+}
+
+.rule-card input {
+  margin-top: 3px;
+}
+
+.rule-card span {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
+.rule-card strong {
+  color: #102027;
+}
+
+.rule-card em {
+  border-radius: 999px;
+  background: #e7f2ef;
+  color: #195d56;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.rule-card p {
+  grid-column: 2;
+  margin: 0;
+  color: #52636b;
+  line-height: 1.5;
+}
+
+.cleaned-preview,
+.compact-result {
+  margin-top: 18px;
 }
 
 .warning-panel,
@@ -497,6 +563,15 @@ dd {
 
 .issue-card.info {
   border-left-color: #20746b;
+}
+
+.issue-card.applied {
+  border-left-color: #20746b;
+}
+
+.issue-card.no_effect,
+.issue-card.skipped {
+  border-left-color: #697a82;
 }
 
 .issue-card span {
@@ -656,6 +731,7 @@ h2 {
   .upload-workspace,
   .structure-workspace,
   .quality-workspace,
+  .cleaning-workspace,
   .workflow {
     width: min(100% - 28px, 1120px);
   }
@@ -679,7 +755,9 @@ h2 {
   .summary-grid,
   .sheet-selector,
   .sheet-list,
-  .issue-card-grid {
+  .issue-card-grid,
+  .rule-grid,
+  .compact-summary {
     grid-template-columns: 1fr;
   }
 
