@@ -27,6 +27,10 @@ import {
   CleanedCsvExportError,
   exportCleanedCsv,
 } from "./api/cleanedCsvExport";
+import {
+  CleaningReportError,
+  generateCleaningReport,
+} from "./api/cleaningReport";
 
 type ProductSection = {
   title: string;
@@ -140,11 +144,19 @@ function App() {
   const [cleaningErrorMessage, setCleaningErrorMessage] = useState<string | null>(null);
   const [exportErrorMessage, setExportErrorMessage] = useState<string | null>(null);
   const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
+  const [reportErrorMessage, setReportErrorMessage] = useState<string | null>(null);
+  const [reportSuccessMessage, setReportSuccessMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
   const [isGeneratingCleaningPreview, setIsGeneratingCleaningPreview] = useState(false);
   const [isExportingCsv, setIsExportingCsv] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+
+  const clearReportStatus = () => {
+    setReportErrorMessage(null);
+    setReportSuccessMessage(null);
+  };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -161,6 +173,7 @@ function App() {
     setCleaningErrorMessage(null);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -180,6 +193,7 @@ function App() {
     setSelectedRules([]);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
     setSelectedSheetName("");
 
     try {
@@ -211,6 +225,7 @@ function App() {
     setSelectedRules([]);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
 
     try {
       const result = await detectFileStructure(selectedFile);
@@ -244,6 +259,7 @@ function App() {
     setSelectedRules([]);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
 
     try {
       setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
@@ -276,6 +292,7 @@ function App() {
     setSelectedRules([]);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
 
     try {
       const result = await detectDataQuality(selectedFile, sheetName || undefined);
@@ -308,6 +325,7 @@ function App() {
     setCleaningErrorMessage(null);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
   };
 
   const handleGenerateCleaningPreview = async () => {
@@ -325,6 +343,7 @@ function App() {
     setCleaningResult(null);
     setExportErrorMessage(null);
     setExportSuccessMessage(null);
+    clearReportStatus();
 
     try {
       setCleaningResult(
@@ -377,6 +396,40 @@ function App() {
     }
   };
 
+  const handleOpenCleaningReport = async () => {
+    if (!selectedFile || !cleaningResult || cleaningResult.cleaning_status !== "preview_generated") {
+      setReportErrorMessage("Generate a cleaned preview before opening an HTML report.");
+      return;
+    }
+
+    const sheetName = excelExtensions.has(cleaningResult.detected_extension)
+      ? cleaningResult.selected_sheet_name ?? selectedSheetName
+      : undefined;
+
+    setIsGeneratingReport(true);
+    setReportErrorMessage(null);
+    setReportSuccessMessage(null);
+
+    try {
+      const blob = await generateCleaningReport(selectedFile, selectedRules, sheetName || undefined);
+      const url = URL.createObjectURL(blob);
+      const openedWindow = window.open(url, "_blank", "noopener,noreferrer");
+      setReportSuccessMessage(
+        openedWindow
+          ? "Opened HTML cleaning report."
+          : "Generated HTML cleaning report. Allow pop-ups if the report did not open.",
+      );
+    } catch (error) {
+      setReportErrorMessage(
+        error instanceof CleaningReportError
+          ? error.message
+          : "HTML cleaning report generation failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   const canDetectStructure =
     validationResult?.validation_status === "accepted" &&
     (csvLikeExtensions.has(validationResult.detected_extension) ||
@@ -391,19 +444,19 @@ function App() {
     <main className="app-shell">
       <section className="hero" aria-labelledby="product-title">
         <div className="hero-copy">
-          <p className="eyebrow">Excel and CSV structure detection</p>
+          <p className="eyebrow">CSV and Excel cleaning reports</p>
           <h1 id="product-title">DataPulse</h1>
           <p className="subtitle">Messy CSV & Excel Cleaner Studio</p>
           <p className="description">
-            Upload a CSV-like or Excel file, validate it, detect table structure,
-            then inspect a bounded raw preview. Cleaning, export, and reports remain
-            planned for later milestones.
+            Upload a CSV-like or Excel file, validate it, detect structure,
+            analyze quality issues, apply deterministic cleaning rules, export CSV,
+            and open a standalone HTML cleaning report.
           </p>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0004</span>
-          <strong>Excel sheet preview active</strong>
-          <p>CSV-like files and Excel sheets can be previewed as raw values.</p>
+          <span className="status-label">DP-0008</span>
+          <strong>HTML cleaning report active</strong>
+          <p>Workflow summaries can be opened as standalone HTML reports.</p>
         </div>
       </section>
 
@@ -1071,6 +1124,38 @@ function App() {
                   )}
                   {exportErrorMessage && (
                     <p className="export-status error">{exportErrorMessage}</p>
+                  )}
+                </div>
+
+                <div className="report-panel" aria-label="HTML cleaning report panel">
+                  <div>
+                    <span className="status-label">HTML report</span>
+                    <h3>Open HTML Cleaning Report</h3>
+                    <p>
+                      Report format: HTML. Includes structure summary, data quality issues,
+                      column profiles, selected rules, rule effects, cleaned preview, and CSV export notes.
+                    </p>
+                    {excelExtensions.has(cleaningResult.detected_extension) && (
+                      <p>
+                        Excel values are reported only as table values. Formatting, formulas,
+                        charts, and merged cell behavior are not preserved.
+                      </p>
+                    )}
+                    <p>No saved history is created yet.</p>
+                  </div>
+                  <button
+                    className="primary-action"
+                    type="button"
+                    disabled={isGeneratingReport}
+                    onClick={handleOpenCleaningReport}
+                  >
+                    {isGeneratingReport ? "Generating report..." : "Open HTML Cleaning Report"}
+                  </button>
+                  {reportSuccessMessage && (
+                    <p className="export-status success">{reportSuccessMessage}</p>
+                  )}
+                  {reportErrorMessage && (
+                    <p className="export-status error">{reportErrorMessage}</p>
                   )}
                 </div>
               </div>

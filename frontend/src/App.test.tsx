@@ -15,6 +15,7 @@ import {
   type CleaningPreviewResult,
 } from "./api/cleaningPreview";
 import { exportCleanedCsv } from "./api/cleanedCsvExport";
+import { generateCleaningReport } from "./api/cleaningReport";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
@@ -54,6 +55,14 @@ vi.mock("./api/cleanedCsvExport", async (importOriginal) => {
   return {
     ...actual,
     exportCleanedCsv: vi.fn(),
+  };
+});
+
+vi.mock("./api/cleaningReport", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api/cleaningReport")>();
+  return {
+    ...actual,
+    generateCleaningReport: vi.fn(),
   };
 });
 
@@ -338,6 +347,7 @@ describe("App", () => {
     vi.mocked(detectDataQuality).mockReset();
     vi.mocked(generateCleaningPreview).mockReset();
     vi.mocked(exportCleanedCsv).mockReset();
+    vi.mocked(generateCleaningReport).mockReset();
   });
 
   it("renders the DataPulse product foundation screen", () => {
@@ -585,7 +595,8 @@ describe("App", () => {
     expect(screen.getByRole("region", { name: "Cleaned preview table" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "Ari" })).toBeInTheDocument();
     expect(screen.getByText("Download cleaned CSV")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /HTML report/i })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Open HTML Cleaning Report" })).toBeInTheDocument();
+    expect(screen.getByText(/No saved history is created yet/)).toBeInTheDocument();
     expect(vi.mocked(generateCleaningPreview)).toHaveBeenCalledWith(
       expect.any(File),
       expect.arrayContaining(["trim_whitespace"]),
@@ -605,6 +616,61 @@ describe("App", () => {
     expect(createObjectUrl).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:datapulse-cleaned");
+  });
+
+  it("opens an HTML cleaning report after cleaned preview", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(generateCleaningPreview).mockResolvedValue(cleaningPreviewResponse);
+    vi.mocked(generateCleaningReport).mockResolvedValue(
+      new Blob(["<html>report</html>"], { type: "text/html" }),
+    );
+    const createObjectUrl = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:datapulse-report");
+    const openWindow = vi.fn(() => ({ closed: false }) as Window);
+    vi.stubGlobal("open", openWindow);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate Cleaned Preview" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Open HTML Cleaning Report" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Open HTML Cleaning Report" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Opened HTML cleaning report.")).toBeInTheDocument();
+    });
+    expect(vi.mocked(generateCleaningReport)).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.arrayContaining(["trim_whitespace"]),
+      undefined,
+    );
+    expect(createObjectUrl).toHaveBeenCalled();
+    expect(openWindow).toHaveBeenCalledWith("blob:datapulse-report", "_blank", "noopener,noreferrer");
+    expect(screen.queryByText(/Previous reports/i)).not.toBeInTheDocument();
   });
 
   it("runs quality analysis for the selected Excel sheet", async () => {
