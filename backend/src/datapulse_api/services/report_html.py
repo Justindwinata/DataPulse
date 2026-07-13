@@ -5,6 +5,7 @@ from datapulse_api.models import (
     CleaningRuleEffect,
     ColumnProfile,
     DataQualityIssue,
+    SavedSessionReportDocument,
     StructureWarning,
 )
 
@@ -36,6 +37,34 @@ def render_cleaning_report_html(report: CleaningReportDocument) -> str:
     )
 
 
+def render_saved_session_report_html(report: SavedSessionReportDocument) -> str:
+    return "\n".join(
+        [
+            "<!doctype html>",
+            '<html lang="en">',
+            "<head>",
+            '<meta charset="utf-8">',
+            '<meta name="viewport" content="width=device-width, initial-scale=1">',
+            f"<title>{_e(report.metadata.title)}</title>",
+            f"<style>{_styles()}</style>",
+            "</head>",
+            "<body>",
+            '<main class="report-shell">',
+            _render_saved_header(report),
+            _render_saved_notice(report),
+            _render_saved_executive_summary(report),
+            _render_saved_structure_summary(report),
+            _render_saved_quality_summary(report),
+            _render_saved_cleaning_summary(report),
+            _render_saved_export_summary(report),
+            _render_limitations(report),
+            "</main>",
+            "</body>",
+            "</html>",
+        ]
+    )
+
+
 def _render_header(report: CleaningReportDocument) -> str:
     generated_at = report.metadata.generated_at.isoformat(timespec="seconds")
     sheet = (
@@ -57,6 +86,37 @@ def _render_header(report: CleaningReportDocument) -> str:
 """
 
 
+def _render_saved_header(report: SavedSessionReportDocument) -> str:
+    generated_at = report.metadata.generated_at.isoformat(timespec="seconds")
+    created_at = report.metadata.session_created_at.isoformat(timespec="seconds")
+    sheet = (
+        f"<p><strong>Selected sheet:</strong> {_e(report.metadata.selected_sheet_name)}</p>"
+        if report.metadata.selected_sheet_name
+        else ""
+    )
+    return f"""
+<header class="report-header">
+  <p class="eyebrow">DataPulse</p>
+  <h1>{_e(report.metadata.title)}</h1>
+  <div class="meta-grid">
+    <p><strong>Saved session ID:</strong> {_e(report.metadata.session_id)}</p>
+    <p><strong>Source file:</strong> {_e(report.metadata.source_filename)}</p>
+    <p><strong>File type:</strong> {_e(report.metadata.detected_extension.upper())}</p>
+    {sheet}
+    <p><strong>Original session created:</strong> {_e(created_at)}</p>
+    <p><strong>Replay generated:</strong> {_e(generated_at)}</p>
+  </div>
+</header>
+"""
+
+
+def _render_saved_notice(report: SavedSessionReportDocument) -> str:
+    return _section(
+        "Saved Metadata Notice",
+        f'<p class="notice">{_e(report.metadata_notice)}</p>',
+    )
+
+
 def _render_executive_summary(report: CleaningReportDocument) -> str:
     cards = [
         ("Sample rows", str(report.quality.sampled_row_count)),
@@ -66,6 +126,20 @@ def _render_executive_summary(report: CleaningReportDocument) -> str:
         ("Selected rules", str(len(report.metadata.selected_rules))),
         ("Rows after cleaning", str(report.cleaning.after_summary.row_count)),
         ("Columns after cleaning", str(report.cleaning.after_summary.column_count)),
+    ]
+    return _section("Executive Summary", f'<div class="card-grid">{_cards(cards)}</div>')
+
+
+def _render_saved_executive_summary(report: SavedSessionReportDocument) -> str:
+    cards = [
+        ("Quality score", _display(report.quality_score)),
+        ("Total issues", str(report.total_issue_count)),
+        ("Selected rules", str(len(report.selected_rules))),
+        ("Rows before", _display(report.rows_before)),
+        ("Rows after", _display(report.rows_after)),
+        ("Columns before", _display(report.columns_before)),
+        ("Columns after", _display(report.columns_after)),
+        ("Export format", report.export_format),
     ]
     return _section("Executive Summary", f'<div class="card-grid">{_cards(cards)}</div>')
 
@@ -98,6 +172,23 @@ def _render_structure_summary(report: CleaningReportDocument) -> str:
     return _section("Structure Summary", content)
 
 
+def _render_saved_structure_summary(report: SavedSessionReportDocument) -> str:
+    summary = report.structure_summary
+    cards = [
+        ("Structure status", _string_from(summary, "structure_status")),
+        ("Detected columns", _string_from(summary, "detected_column_count")),
+        ("Preview rows", _string_from(summary, "preview_row_count")),
+        ("Delimiter", _string_from(summary, "delimiter_label")),
+        ("Selected sheet", _display(report.metadata.selected_sheet_name)),
+    ]
+    content = f"""
+<div class="card-grid compact">{_cards(cards)}</div>
+<h3>Stored Structure Metadata</h3>
+{_metadata_table(summary)}
+"""
+    return _section("Structure Summary", content)
+
+
 def _render_quality_summary(report: CleaningReportDocument) -> str:
     quality = report.quality
     severity_cards = [
@@ -111,6 +202,22 @@ def _render_quality_summary(report: CleaningReportDocument) -> str:
 {_quality_issues(quality.issues)}
 <h3>Column Profiles</h3>
 {_column_profiles(quality.columns)}
+"""
+    return _section("Data Quality Summary", content)
+
+
+def _render_saved_quality_summary(report: SavedSessionReportDocument) -> str:
+    summary = report.quality_summary
+    severity_counts = summary.get("severity_counts") if isinstance(summary.get("severity_counts"), dict) else {}
+    severity_cards = [
+        ("Critical issues", _display(severity_counts.get("critical"))),
+        ("Warning issues", _display(severity_counts.get("warning"))),
+        ("Info issues", _display(severity_counts.get("info"))),
+    ]
+    content = f"""
+<div class="card-grid compact">{_cards(severity_cards)}</div>
+<h3>Stored Quality Metadata</h3>
+{_metadata_table(summary)}
 """
     return _section("Data Quality Summary", content)
 
@@ -145,6 +252,23 @@ def _render_cleaning_summary(report: CleaningReportDocument) -> str:
     return _section("Cleaning Summary", content)
 
 
+def _render_saved_cleaning_summary(report: SavedSessionReportDocument) -> str:
+    selected_rules = ", ".join(report.selected_rules) if report.selected_rules else "No rules selected"
+    preview = report.preview_snapshot if isinstance(report.preview_snapshot, dict) else None
+    columns = preview.get("columns") if preview else []
+    rows = preview.get("rows") if preview else []
+    content = f"""
+<p><strong>Selected rules:</strong> {_e(selected_rules)}</p>
+<h3>Stored Cleaning Summary</h3>
+{_metadata_table(report.cleaning_summary)}
+<h3>Rule Effects</h3>
+{_metadata_list(report.rule_effects, empty_message="No rule effects were stored.")}
+<h3>Saved Cleaned Preview Snapshot</h3>
+{_table(_string_list(columns), _string_rows(rows)) if preview else "<p>No preview snapshot was stored.</p>"}
+"""
+    return _section("Cleaning Summary", content)
+
+
 def _render_export_summary(report: CleaningReportDocument) -> str:
     excel_note = ""
     if report.metadata.detected_extension in {"xls", "xlsx"}:
@@ -161,6 +285,28 @@ def _render_export_summary(report: CleaningReportDocument) -> str:
   <p><strong>Original file modified:</strong> {_yes_no(report.export.original_file_modified)}</p>
   {excel_note}
 </div>
+"""
+    return _section("Export Summary", content)
+
+
+def _render_saved_export_summary(report: SavedSessionReportDocument) -> str:
+    excel_note = ""
+    if report.metadata.detected_extension in {"xls", "xlsx"}:
+        excel_note = (
+            "<p>Excel values are exported only as CSV. Formatting, formulas, charts, "
+            "and merged cell behavior are not preserved.</p>"
+        )
+    content = f"""
+<div class="summary-list">
+  <p><strong>Export format:</strong> {_e(report.export_format)}</p>
+  <p><strong>CSV-first strategy:</strong> {_e(_string_from(report.export_summary, "csv_first_strategy"))}</p>
+  <p><strong>Original file modified:</strong> {_e(_string_from(report.export_summary, "original_file_modified"))}</p>
+  <p><strong>Original uploaded file stored:</strong> No</p>
+  <p><strong>History storage:</strong> Local SQLite metadata only</p>
+  {excel_note}
+</div>
+<h3>Stored Export Metadata</h3>
+{_metadata_table(report.export_summary)}
 """
     return _section("Export Summary", content)
 
@@ -283,6 +429,52 @@ def _yes_no(value: bool) -> str:
     return "Yes" if value else "No"
 
 
+def _display(value: object) -> str:
+    return "-" if value is None or value == "" else str(value)
+
+
+def _string_from(mapping: dict, key: str) -> str:
+    return _display(mapping.get(key)) if isinstance(mapping, dict) else "-"
+
+
+def _metadata_table(metadata: dict) -> str:
+    if not metadata:
+        return "<p>No metadata was stored for this section.</p>"
+    rows = [[str(key), _metadata_value(value)] for key, value in sorted(metadata.items())]
+    return _table(["Field", "Stored value"], rows)
+
+
+def _metadata_list(items: list[dict], *, empty_message: str) -> str:
+    if not items:
+        return f"<p>{_e(empty_message)}</p>"
+    rows = [[str(index + 1), _metadata_value(item)] for index, item in enumerate(items)]
+    return _table(["#", "Stored value"], rows)
+
+
+def _metadata_value(value: object) -> str:
+    if isinstance(value, dict):
+        return "; ".join(f"{key}: {_metadata_value(nested)}" for key, nested in value.items())
+    if isinstance(value, list):
+        return ", ".join(_metadata_value(item) for item in value)
+    return _display(value)
+
+
+def _string_list(values: object) -> list[str]:
+    if not isinstance(values, list):
+        return []
+    return [str(value) for value in values]
+
+
+def _string_rows(rows: object) -> list[list[str]]:
+    if not isinstance(rows, list):
+        return []
+    normalized = []
+    for row in rows:
+        if isinstance(row, list):
+            normalized.append([str(cell) for cell in row])
+    return normalized
+
+
 def _e(value: object) -> str:
     return escape("" if value is None else str(value), quote=True)
 
@@ -330,6 +522,12 @@ h3 { margin: 24px 0 12px; font-size: 1rem; }
 .summary-card span { display: block; color: #5e6c75; font-size: 0.85rem; }
 .summary-card strong { display: block; margin-top: 6px; font-size: 1.4rem; color: #12343b; }
 .compact .summary-card strong { font-size: 1.1rem; }
+.notice {
+  border-left: 5px solid #2563eb;
+  background: #eef6ff;
+  padding: 14px 16px;
+  border-radius: 8px;
+}
 .issue-card {
   border: 1px solid #d9e2e7;
   border-left-width: 5px;

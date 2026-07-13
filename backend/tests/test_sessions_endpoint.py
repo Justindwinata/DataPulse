@@ -57,6 +57,63 @@ def test_create_list_get_and_delete_session(tmp_path: Path) -> None:
     app.dependency_overrides.clear()
 
 
+def test_saved_session_report_returns_html_from_metadata(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
+    create_response = client.post("/sessions", json=session_payload())
+    session_id = create_response.json()["id"]
+
+    response = client.get(f"/sessions/{session_id}/report.html")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    assert "DataPulse Saved Cleaning Session Report" in response.text
+    assert "messy.csv" in response.text
+    assert "This report was generated from saved cleaning session metadata" in response.text
+    assert "trim_whitespace" in response.text
+    assert "Quality score" in response.text
+    assert "Original uploaded files are not stored by DataPulse" in response.text
+    app.dependency_overrides.clear()
+
+
+def test_saved_session_report_escapes_stored_values(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
+    payload = session_payload()
+    payload["source_filename"] = '<script>alert("file")</script>.csv'
+    payload["structure_summary"] = {
+        "detected_column_count": 1,
+        "warnings": [{"message": "<img src=x onerror=alert(1)>"}],
+    }
+    payload["quality_summary"] = {
+        "quality_score": 50,
+        "total_issue_count": 1,
+        "issues": [{"title": "<b>Unsafe</b>", "message": "<script>alert(1)</script>"}],
+    }
+    payload["preview_snapshot"] = {
+        "columns": ["<script>column</script>"],
+        "rows": [["<img src=x onerror=alert(1)>"]],
+    }
+    session_id = client.post("/sessions", json=payload).json()["id"]
+
+    response = client.get(f"/sessions/{session_id}/report.html")
+
+    assert response.status_code == 200
+    assert "<script>alert" not in response.text
+    assert "<img src=x" not in response.text
+    assert "&lt;script&gt;alert" in response.text
+    assert "&lt;img src=x" in response.text
+    app.dependency_overrides.clear()
+
+
+def test_saved_session_report_missing_session_returns_404(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
+
+    response = client.get("/sessions/999/report.html")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Saved cleaning session not found."
+    app.dependency_overrides.clear()
+
+
 def test_create_session_rejects_invalid_payload(tmp_path: Path) -> None:
     client = make_client(tmp_path)
     payload = session_payload()
