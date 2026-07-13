@@ -33,6 +33,33 @@ class CleaningRuleType(StrEnum):
     CONVERT_DATE_COLUMNS = "convert_date_columns"
 
 
+class CleaningRuleCode(StrEnum):
+    TRIM_WHITESPACE = "trim_whitespace"
+    REMOVE_EMPTY_ROWS = "remove_empty_rows"
+    REMOVE_DUPLICATE_ROWS = "remove_duplicate_rows"
+    DROP_EMPTY_COLUMNS = "drop_empty_columns"
+    STANDARDIZE_COLUMN_NAMES = "standardize_column_names"
+    GENERATE_MISSING_COLUMN_NAMES = "generate_missing_column_names"
+
+
+class CleaningStatus(StrEnum):
+    PREVIEW_GENERATED = "preview_generated"
+    REJECTED = "rejected"
+    SHEET_SELECTION_REQUIRED = "sheet_selection_required"
+
+
+class CleaningRuleEffectStatus(StrEnum):
+    APPLIED = "applied"
+    NO_EFFECT = "no_effect"
+    SKIPPED = "skipped"
+
+
+class CleaningWarningSeverity(StrEnum):
+    INFO = "info"
+    WARNING = "warning"
+    ERROR = "error"
+
+
 class UploadedFileMetadata(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -60,6 +87,76 @@ class TablePreview(BaseModel):
     row_count_sampled: NonNegativeInt
     total_rows_estimate: NonNegativeInt | None = None
     truncated: bool = False
+
+
+class CleanedTablePreview(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    columns: list[str] = Field(default_factory=list)
+    rows: list[list[str]] = Field(default_factory=list)
+
+
+class CleaningSummaryBefore(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    row_count: NonNegativeInt
+    column_count: NonNegativeInt
+    empty_rows_count: NonNegativeInt = 0
+    duplicate_rows_count: NonNegativeInt = 0
+    empty_columns_count: NonNegativeInt = 0
+
+
+class CleaningSummaryAfter(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    row_count: NonNegativeInt
+    column_count: NonNegativeInt
+    removed_empty_rows_count: NonNegativeInt = 0
+    removed_duplicate_rows_count: NonNegativeInt = 0
+    dropped_empty_columns_count: NonNegativeInt = 0
+    renamed_columns_count: NonNegativeInt = 0
+
+
+class CleaningRuleEffect(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rule: CleaningRuleCode
+    label: str = Field(min_length=1, max_length=120)
+    status: CleaningRuleEffectStatus
+    message: str = Field(min_length=1, max_length=500)
+    affected_rows: NonNegativeInt = 0
+    affected_columns: NonNegativeInt = 0
+
+
+class CleaningPreviewWarning(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    code: str = Field(min_length=1, max_length=80)
+    message: str = Field(min_length=1, max_length=500)
+    severity: CleaningWarningSeverity = CleaningWarningSeverity.INFO
+
+
+class CleaningNextStep(StrEnum):
+    DOWNLOAD_CLEANED_CSV = "download_cleaned_csv"
+    SELECT_EXCEL_SHEET = "select_excel_sheet"
+    UPLOAD_SUPPORTED_FILE = "upload_supported_file"
+
+
+class CleaningPreviewResult(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cleaning_status: CleaningStatus
+    original_filename: str = Field(min_length=1, max_length=255)
+    safe_filename: str = Field(min_length=1, max_length=255)
+    detected_extension: str = Field(min_length=1, max_length=16)
+    selected_sheet_name: str | None = Field(default=None, max_length=255)
+    applied_rules: list[CleaningRuleCode] = Field(default_factory=list)
+    before_summary: CleaningSummaryBefore
+    after_summary: CleaningSummaryAfter
+    rule_effects: list[CleaningRuleEffect] = Field(default_factory=list)
+    cleaned_preview: CleanedTablePreview = Field(default_factory=CleanedTablePreview)
+    warnings: list[CleaningPreviewWarning] = Field(default_factory=list)
+    next_step: CleaningNextStep
 
 
 class DetectedStructure(BaseModel):
