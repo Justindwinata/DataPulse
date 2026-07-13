@@ -14,6 +14,7 @@ import {
   generateCleaningPreview,
   type CleaningPreviewResult,
 } from "./api/cleaningPreview";
+import { exportCleanedCsv } from "./api/cleanedCsvExport";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
@@ -45,6 +46,14 @@ vi.mock("./api/cleaningPreview", async (importOriginal) => {
   return {
     ...actual,
     generateCleaningPreview: vi.fn(),
+  };
+});
+
+vi.mock("./api/cleanedCsvExport", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api/cleanedCsvExport")>();
+  return {
+    ...actual,
+    exportCleanedCsv: vi.fn(),
   };
 });
 
@@ -328,6 +337,7 @@ describe("App", () => {
     vi.mocked(detectFileStructure).mockReset();
     vi.mocked(detectDataQuality).mockReset();
     vi.mocked(generateCleaningPreview).mockReset();
+    vi.mocked(exportCleanedCsv).mockReset();
   });
 
   it("renders the DataPulse product foundation screen", () => {
@@ -532,6 +542,15 @@ describe("App", () => {
     vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
     vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
     vi.mocked(generateCleaningPreview).mockResolvedValue(cleaningPreviewResponse);
+    vi.mocked(exportCleanedCsv).mockResolvedValue({
+      blob: new Blob(["name\nAri\n"], { type: "text/csv" }),
+      filename: "messy_cleaned.csv",
+    });
+    const createObjectUrl = vi
+      .spyOn(URL, "createObjectURL")
+      .mockReturnValue("blob:datapulse-cleaned");
+    const revokeObjectUrl = vi.spyOn(URL, "revokeObjectURL").mockImplementation(() => undefined);
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
     render(<App />);
 
     fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
@@ -565,13 +584,27 @@ describe("App", () => {
     expect(screen.getByText("Rule effects")).toBeInTheDocument();
     expect(screen.getByRole("region", { name: "Cleaned preview table" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "Ari" })).toBeInTheDocument();
-    expect(screen.getByText(/Download\/export will be available/)).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /download/i })).not.toBeInTheDocument();
+    expect(screen.getByText("Download cleaned CSV")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /HTML report/i })).not.toBeInTheDocument();
     expect(vi.mocked(generateCleaningPreview)).toHaveBeenCalledWith(
       expect.any(File),
       expect.arrayContaining(["trim_whitespace"]),
       undefined,
     );
+
+    fireEvent.click(screen.getByRole("button", { name: "Download Cleaned CSV" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Downloaded messy_cleaned.csv")).toBeInTheDocument();
+    });
+    expect(vi.mocked(exportCleanedCsv)).toHaveBeenCalledWith(
+      expect.any(File),
+      expect.arrayContaining(["trim_whitespace"]),
+      undefined,
+    );
+    expect(createObjectUrl).toHaveBeenCalled();
+    expect(clickSpy).toHaveBeenCalled();
+    expect(revokeObjectUrl).toHaveBeenCalledWith("blob:datapulse-cleaned");
   });
 
   it("runs quality analysis for the selected Excel sheet", async () => {
@@ -649,11 +682,52 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("Cleaned preview")).toBeInTheDocument();
     });
+    expect(screen.getByText(/Excel formatting, formulas, charts/)).toBeInTheDocument();
     expect(vi.mocked(generateCleaningPreview)).toHaveBeenLastCalledWith(
       expect.any(File),
       expect.any(Array),
       "Sales",
     );
+  });
+
+  it("renders cleaned CSV export error state", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(generateCleaningPreview).mockResolvedValue(cleaningPreviewResponse);
+    vi.mocked(exportCleanedCsv).mockRejectedValue(new Error("backend down"));
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Generate Cleaned Preview" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Download Cleaned CSV" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Download Cleaned CSV" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Cleaned CSV export failed/)).toBeInTheDocument();
+    });
   });
 
   it("renders cleaning preview backend error state", async () => {

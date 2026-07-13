@@ -23,6 +23,10 @@ import {
   type CleaningPreviewResult,
   type CleaningRuleCode,
 } from "./api/cleaningPreview";
+import {
+  CleanedCsvExportError,
+  exportCleanedCsv,
+} from "./api/cleanedCsvExport";
 
 type ProductSection = {
   title: string;
@@ -134,10 +138,13 @@ function App() {
   const [structureErrorMessage, setStructureErrorMessage] = useState<string | null>(null);
   const [qualityErrorMessage, setQualityErrorMessage] = useState<string | null>(null);
   const [cleaningErrorMessage, setCleaningErrorMessage] = useState<string | null>(null);
+  const [exportErrorMessage, setExportErrorMessage] = useState<string | null>(null);
+  const [exportSuccessMessage, setExportSuccessMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
   const [isGeneratingCleaningPreview, setIsGeneratingCleaningPreview] = useState(false);
+  const [isExportingCsv, setIsExportingCsv] = useState(false);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] ?? null;
@@ -152,6 +159,8 @@ function App() {
     setStructureErrorMessage(null);
     setQualityErrorMessage(null);
     setCleaningErrorMessage(null);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -169,6 +178,8 @@ function App() {
     setQualityResult(null);
     setCleaningResult(null);
     setSelectedRules([]);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
     setSelectedSheetName("");
 
     try {
@@ -198,6 +209,8 @@ function App() {
     setQualityResult(null);
     setCleaningResult(null);
     setSelectedRules([]);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
 
     try {
       const result = await detectFileStructure(selectedFile);
@@ -229,6 +242,8 @@ function App() {
     setQualityResult(null);
     setCleaningResult(null);
     setSelectedRules([]);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
 
     try {
       setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
@@ -259,6 +274,8 @@ function App() {
     setQualityResult(null);
     setCleaningResult(null);
     setSelectedRules([]);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
 
     try {
       const result = await detectDataQuality(selectedFile, sheetName || undefined);
@@ -289,6 +306,8 @@ function App() {
     );
     setCleaningResult(null);
     setCleaningErrorMessage(null);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
   };
 
   const handleGenerateCleaningPreview = async () => {
@@ -304,6 +323,8 @@ function App() {
     setIsGeneratingCleaningPreview(true);
     setCleaningErrorMessage(null);
     setCleaningResult(null);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
 
     try {
       setCleaningResult(
@@ -317,6 +338,42 @@ function App() {
       );
     } finally {
       setIsGeneratingCleaningPreview(false);
+    }
+  };
+
+  const handleExportCleanedCsv = async () => {
+    if (!selectedFile || !cleaningResult || cleaningResult.cleaning_status !== "preview_generated") {
+      setExportErrorMessage("Generate a cleaned preview before downloading CSV.");
+      return;
+    }
+
+    const sheetName = excelExtensions.has(cleaningResult.detected_extension)
+      ? cleaningResult.selected_sheet_name ?? selectedSheetName
+      : undefined;
+
+    setIsExportingCsv(true);
+    setExportErrorMessage(null);
+    setExportSuccessMessage(null);
+
+    try {
+      const download = await exportCleanedCsv(selectedFile, selectedRules, sheetName || undefined);
+      const url = URL.createObjectURL(download.blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = download.filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setExportSuccessMessage(`Downloaded ${download.filename}`);
+    } catch (error) {
+      setExportErrorMessage(
+        error instanceof CleanedCsvExportError
+          ? error.message
+          : "Cleaned CSV export failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsExportingCsv(false);
     }
   };
 
@@ -978,9 +1035,44 @@ function App() {
                 </div>
 
                 <p className="future-note">
-                  DataPulse has not modified your original file. Download/export will be
-                  available in the next milestone.
+                  DataPulse has not modified your original file. Export is CSV-first and
+                  generated from your selected deterministic rules.
                 </p>
+
+                <div className="export-panel" aria-label="Cleaned CSV export panel">
+                  <div>
+                    <span className="status-label">CSV export</span>
+                    <h3>Download cleaned CSV</h3>
+                    <p>
+                      {selectedRules.length} selected rules. Source:{" "}
+                      {cleaningResult.safe_filename}
+                      {cleaningResult.selected_sheet_name
+                        ? `, sheet ${cleaningResult.selected_sheet_name}`
+                        : ""}
+                      .
+                    </p>
+                    {excelExtensions.has(cleaningResult.detected_extension) && (
+                      <p>
+                        Excel formatting, formulas, charts, and merged cell behavior are
+                        not preserved. DataPulse exports cleaned values as CSV.
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    className="primary-action"
+                    type="button"
+                    disabled={isExportingCsv}
+                    onClick={handleExportCleanedCsv}
+                  >
+                    {isExportingCsv ? "Downloading..." : "Download Cleaned CSV"}
+                  </button>
+                  {exportSuccessMessage && (
+                    <p className="export-status success">{exportSuccessMessage}</p>
+                  )}
+                  {exportErrorMessage && (
+                    <p className="export-status error">{exportErrorMessage}</p>
+                  )}
+                </div>
               </div>
             )}
           </div>
