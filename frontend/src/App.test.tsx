@@ -75,6 +75,8 @@ const structureResponse: StructureDetectionResult = {
     delimiter_confidence: "high",
     detection_reason: "Comma produced the most consistent sampled row widths.",
   },
+  workbook: null,
+  selected_sheet_name: null,
   has_detected_header: true,
   header_row_index: 0,
   column_names: ["name", "total"],
@@ -96,6 +98,62 @@ const structureResponse: StructureDetectionResult = {
     rows: [["Ada", "10"]],
   },
   next_step: "quality_issue_detection",
+};
+
+const workbookDiscoveryResponse: StructureDetectionResult = {
+  original_filename: "workbook.xlsx",
+  safe_filename: "workbook.xlsx",
+  detected_extension: "xlsx",
+  file_size_bytes: 4096,
+  content_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  structure_status: "sheet_selection_required",
+  delimiter: null,
+  workbook: {
+    workbook_type: "xlsx",
+    sheet_names: ["Sales", "Customers"],
+    sheet_count: 2,
+    default_sheet_name: "Sales",
+    sheets: [
+      { sheet_name: "Sales", sheet_index: 0, max_row: 2, max_column: 2, is_empty: false },
+      { sheet_name: "Customers", sheet_index: 1, max_row: 1, max_column: 1, is_empty: false },
+    ],
+  },
+  selected_sheet_name: null,
+  has_detected_header: false,
+  header_row_index: null,
+  column_names: [],
+  generated_column_names: false,
+  detected_column_count: 0,
+  sampled_row_count: 0,
+  preview_row_count: 0,
+  total_row_count_calculated: false,
+  total_row_count: null,
+  warnings: [
+    {
+      code: "excel_formatting_not_preserved",
+      message:
+        "Excel formatting, formulas, merged cell behavior, charts, and pivot tables are not preserved in preview.",
+      severity: "info",
+    },
+  ],
+  preview: null,
+  next_step: "select_excel_sheet",
+};
+
+const excelPreviewResponse: StructureDetectionResult = {
+  ...structureResponse,
+  original_filename: "workbook.xlsx",
+  safe_filename: "workbook.xlsx",
+  detected_extension: "xlsx",
+  content_type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  delimiter: null,
+  workbook: workbookDiscoveryResponse.workbook,
+  selected_sheet_name: "Sales",
+  column_names: ["customer", "amount"],
+  preview: {
+    columns: ["customer", "amount"],
+    rows: [["Ari", "1200"]],
+  },
 };
 
 describe("App", () => {
@@ -207,8 +265,9 @@ describe("App", () => {
     expect(screen.getByRole("cell", { name: "Ada" })).toBeInTheDocument();
   });
 
-  it("renders Excel limitation message after accepted Excel validation", async () => {
+  it("renders Excel sheet selector after workbook discovery", async () => {
     vi.mocked(validateUploadFile).mockResolvedValue(excelAcceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(workbookDiscoveryResponse);
     render(<App />);
 
     fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
@@ -220,10 +279,49 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("Excel structure detection is planned for a later milestone."),
+        screen.getByText(/Excel workbook detected/),
       ).toBeInTheDocument();
     });
-    expect(screen.queryByRole("button", { name: "Detect Structure" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Choose a sheet to preview")).toBeInTheDocument();
+    });
+    expect(screen.getByLabelText("Sheet")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Preview selected sheet" })).toBeInTheDocument();
+    expect(screen.getByText("excel_formatting_not_preserved")).toBeInTheDocument();
+  });
+
+  it("renders selected Excel sheet preview", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(excelAcceptedResponse);
+    vi.mocked(detectFileStructure)
+      .mockResolvedValueOnce(workbookDiscoveryResponse)
+      .mockResolvedValueOnce(excelPreviewResponse);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["workbook"], "workbook.xlsx")],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Preview selected sheet" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Preview selected sheet" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Selected worksheet")).toBeInTheDocument();
+    });
+    expect(screen.getByRole("columnheader", { name: "customer" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Ari" })).toBeInTheDocument();
+    expect(vi.mocked(detectFileStructure)).toHaveBeenLastCalledWith(expect.any(File), "Sales");
   });
 
   it("renders structure detection backend error state", async () => {

@@ -19,6 +19,8 @@ const detectedResponse: StructureDetectionResult = {
     delimiter_confidence: "high",
     detection_reason: "Comma produced the most consistent sampled row widths.",
   },
+  workbook: null,
+  selected_sheet_name: null,
   has_detected_header: true,
   header_row_index: 0,
   column_names: ["name", "amount"],
@@ -50,6 +52,7 @@ describe("detectFileStructure", () => {
 
     const result = await detectFileStructure(
       new File(["name,amount\nAri,1200\n"], "sales.csv", { type: "text/csv" }),
+      undefined,
       "http://api.test",
     );
 
@@ -63,6 +66,23 @@ describe("detectFileStructure", () => {
     );
   });
 
+  it("includes selected sheet name when provided", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ ...detectedResponse, selected_sheet_name: "Sales" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await detectFileStructure(
+      new File(["workbook"], "workbook.xlsx"),
+      "Sales",
+      "http://api.test",
+    );
+
+    const body = fetchMock.mock.calls[0][1].body as FormData;
+    expect(body.get("sheet_name")).toBe("Sales");
+  });
+
   it("throws a safe error when the backend returns an error status", async () => {
     vi.stubGlobal(
       "fetch",
@@ -73,7 +93,7 @@ describe("detectFileStructure", () => {
     );
 
     await expect(
-      detectFileStructure(new File(["data"], "sales.csv"), "http://api.test"),
+      detectFileStructure(new File(["data"], "sales.csv"), undefined, "http://api.test"),
     ).rejects.toThrow(StructureDetectionError);
   });
 
@@ -81,7 +101,7 @@ describe("detectFileStructure", () => {
     vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("network down")));
 
     await expect(
-      detectFileStructure(new File(["data"], "sales.csv"), "http://api.test"),
+      detectFileStructure(new File(["data"], "sales.csv"), undefined, "http://api.test"),
     ).rejects.toThrow("Structure detection failed");
   });
 });

@@ -41,6 +41,7 @@ const productSections: ProductSection[] = [
 
 const acceptedFormats = ".csv,.tsv,.txt,.xlsx,.xls";
 const csvLikeExtensions = new Set(["csv", "tsv", "txt"]);
+const excelExtensions = new Set(["xlsx", "xls"]);
 
 function formatFileSize(bytes: number): string {
   if (bytes < 1024) {
@@ -57,6 +58,7 @@ function App() {
   const [validationResult, setValidationResult] =
     useState<FileUploadValidationResponse | null>(null);
   const [structureResult, setStructureResult] = useState<StructureDetectionResult | null>(null);
+  const [selectedSheetName, setSelectedSheetName] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [structureErrorMessage, setStructureErrorMessage] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
@@ -67,6 +69,7 @@ function App() {
     setSelectedFile(file);
     setValidationResult(null);
     setStructureResult(null);
+    setSelectedSheetName("");
     setErrorMessage(null);
     setStructureErrorMessage(null);
   };
@@ -83,6 +86,7 @@ function App() {
     setStructureErrorMessage(null);
     setValidationResult(null);
     setStructureResult(null);
+    setSelectedSheetName("");
 
     try {
       setValidationResult(await validateUploadFile(selectedFile));
@@ -108,7 +112,33 @@ function App() {
     setStructureResult(null);
 
     try {
-      setStructureResult(await detectFileStructure(selectedFile));
+      const result = await detectFileStructure(selectedFile);
+      setStructureResult(result);
+      if (result.workbook?.default_sheet_name) {
+        setSelectedSheetName(result.workbook.default_sheet_name);
+      }
+    } catch (error) {
+      setStructureErrorMessage(
+        error instanceof StructureDetectionError
+          ? error.message
+          : "Structure detection failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsDetectingStructure(false);
+    }
+  };
+
+  const handlePreviewSelectedSheet = async () => {
+    if (!selectedFile || !selectedSheetName) {
+      setStructureErrorMessage("Choose a sheet before preview.");
+      return;
+    }
+
+    setIsDetectingStructure(true);
+    setStructureErrorMessage(null);
+
+    try {
+      setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
     } catch (error) {
       setStructureErrorMessage(
         error instanceof StructureDetectionError
@@ -122,7 +152,8 @@ function App() {
 
   const canDetectStructure =
     validationResult?.validation_status === "accepted" &&
-    csvLikeExtensions.has(validationResult.detected_extension);
+    (csvLikeExtensions.has(validationResult.detected_extension) ||
+      excelExtensions.has(validationResult.detected_extension));
   const isExcelUpload =
     validationResult?.validation_status === "accepted" &&
     ["xlsx", "xls"].includes(validationResult.detected_extension);
@@ -131,19 +162,19 @@ function App() {
     <main className="app-shell">
       <section className="hero" aria-labelledby="product-title">
         <div className="hero-copy">
-          <p className="eyebrow">CSV structure detection</p>
+          <p className="eyebrow">Excel and CSV structure detection</p>
           <h1 id="product-title">DataPulse</h1>
           <p className="subtitle">Messy CSV & Excel Cleaner Studio</p>
           <p className="description">
-            Upload a CSV-like file, validate it, detect delimiter and header shape,
-            then inspect a bounded raw preview. Excel parsing and cleaning are still
+            Upload a CSV-like or Excel file, validate it, detect table structure,
+            then inspect a bounded raw preview. Cleaning, export, and reports remain
             planned for later milestones.
           </p>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0003</span>
-          <strong>CSV-like preview active</strong>
-          <p>Structure detection supports CSV, TSV, and TXT. Excel is validated only.</p>
+          <span className="status-label">DP-0004</span>
+          <strong>Excel sheet preview active</strong>
+          <p>CSV-like files and Excel sheets can be previewed as raw values.</p>
         </div>
       </section>
 
@@ -249,7 +280,7 @@ function App() {
                 </ul>
                 <p className="future-note">
                   Structure detection available:{" "}
-                  {canDetectStructure ? "yes for CSV-like files" : "not for this file yet"}.
+                  {canDetectStructure ? "yes for this file" : "not for this file yet"}.
                   Cleaning, exports, reports, and saved history come later.
                 </p>
                 {canDetectStructure && (
@@ -264,7 +295,7 @@ function App() {
                 )}
                 {isExcelUpload && (
                   <p className="excel-note">
-                    Excel structure detection is planned for a later milestone.
+                    Excel workbook detected. Preview values only; formatting and formulas are not preserved.
                   </p>
                 )}
               </div>
@@ -283,8 +314,8 @@ function App() {
           <div className="structure-empty">
             <h3>No structure result yet</h3>
             <p>
-              Validate a CSV, TSV, or TXT file, then run structure detection to see
-              delimiter, header, warnings, and a bounded preview.
+              Validate a CSV, TSV, TXT, XLSX, or XLS file, then run structure detection
+              to see sheets, headers, warnings, and a bounded preview.
             </p>
           </div>
         )}
@@ -297,7 +328,64 @@ function App() {
           </div>
         )}
 
-        {structureResult && structureResult.structure_status !== "detected" && (
+        {structureResult && structureResult.structure_status === "sheet_selection_required" && (
+          <div className="structure-result">
+            <span className="status-label">Excel workbook detected</span>
+            <h3>Choose a sheet to preview</h3>
+            <p className="workbook-copy">
+              Preview values only; formatting and formulas are not preserved.
+            </p>
+            <div className="sheet-selector">
+              <label htmlFor="sheet-selector">Sheet</label>
+              <select
+                id="sheet-selector"
+                value={selectedSheetName}
+                onChange={(event) => setSelectedSheetName(event.target.value)}
+              >
+                {structureResult.workbook?.sheet_names.map((sheetName) => (
+                  <option key={sheetName} value={sheetName}>
+                    {sheetName}
+                  </option>
+                ))}
+              </select>
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={isDetectingStructure || !selectedSheetName}
+                onClick={handlePreviewSelectedSheet}
+              >
+                {isDetectingStructure ? "Previewing sheet..." : "Preview selected sheet"}
+              </button>
+            </div>
+            <div className="sheet-list">
+              {structureResult.workbook?.sheets.map((sheet) => (
+                <article key={sheet.sheet_name}>
+                  <strong>{sheet.sheet_name}</strong>
+                  <span>
+                    {sheet.max_row ?? 0} rows x {sheet.max_column ?? 0} columns
+                  </span>
+                </article>
+              ))}
+            </div>
+            {structureResult.warnings.length > 0 && (
+              <div className="warning-panel">
+                <h3>Excel limitations</h3>
+                <ul>
+                  {structureResult.warnings.map((warning) => (
+                    <li key={warning.code}>
+                      <strong>{warning.code}</strong>
+                      <span>{warning.message}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {structureResult &&
+          structureResult.structure_status !== "detected" &&
+          structureResult.structure_status !== "sheet_selection_required" && (
           <div className="result-card rejected">
             <span className="status-label">
               {structureResult.structure_status === "not_implemented" ? "Planned" : "Rejected"}
@@ -313,9 +401,17 @@ function App() {
           <div className="structure-result">
             <div className="summary-grid">
               <article>
-                <span>Delimiter</span>
-                <strong>{structureResult.delimiter?.delimiter_label ?? "unknown"}</strong>
-                <p>{structureResult.delimiter?.delimiter_confidence ?? "unknown"} confidence</p>
+                <span>{structureResult.selected_sheet_name ? "Sheet" : "Delimiter"}</span>
+                <strong>
+                  {structureResult.selected_sheet_name ??
+                    structureResult.delimiter?.delimiter_label ??
+                    "unknown"}
+                </strong>
+                <p>
+                  {structureResult.selected_sheet_name
+                    ? "Selected worksheet"
+                    : `${structureResult.delimiter?.delimiter_confidence ?? "unknown"} confidence`}
+                </p>
               </article>
               <article>
                 <span>Columns</span>

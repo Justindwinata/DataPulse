@@ -1,10 +1,15 @@
-export type StructureDetectionStatus = "detected" | "rejected" | "not_implemented";
+export type StructureDetectionStatus =
+  | "detected"
+  | "rejected"
+  | "not_implemented"
+  | "sheet_selection_required";
 export type DelimiterConfidence = "high" | "medium" | "low" | "unknown";
 export type StructureWarningSeverity = "info" | "warning" | "error";
 export type StructureNextStep =
   | "quality_issue_detection"
   | "upload_supported_file"
-  | "wait_for_excel_support";
+  | "wait_for_excel_support"
+  | "select_excel_sheet";
 
 export type DelimiterDetection = {
   detected_delimiter: string | null;
@@ -24,6 +29,22 @@ export type RawTablePreview = {
   rows: string[][];
 };
 
+export type ExcelSheetMetadata = {
+  sheet_name: string;
+  sheet_index: number;
+  max_row: number | null;
+  max_column: number | null;
+  is_empty: boolean;
+};
+
+export type ExcelWorkbookMetadata = {
+  workbook_type: string;
+  sheet_names: string[];
+  sheet_count: number;
+  default_sheet_name: string;
+  sheets: ExcelSheetMetadata[];
+};
+
 export type StructureDetectionResult = {
   original_filename: string;
   safe_filename: string;
@@ -32,6 +53,8 @@ export type StructureDetectionResult = {
   content_type: string | null;
   structure_status: StructureDetectionStatus;
   delimiter: DelimiterDetection | null;
+  workbook: ExcelWorkbookMetadata | null;
+  selected_sheet_name: string | null;
   has_detected_header: boolean;
   header_row_index: number | null;
   column_names: string[];
@@ -55,10 +78,14 @@ export class StructureDetectionError extends Error {
 
 export async function detectFileStructure(
   file: File,
+  sheetName?: string,
   apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
 ): Promise<StructureDetectionResult> {
   const formData = new FormData();
   formData.append("file", file);
+  if (sheetName) {
+    formData.append("sheet_name", sheetName);
+  }
 
   let response: Response;
   try {
