@@ -16,7 +16,12 @@ import {
 } from "./api/cleaningPreview";
 import { exportCleanedCsv } from "./api/cleanedCsvExport";
 import { generateCleaningReport } from "./api/cleaningReport";
-import { createSession } from "./api/savedSessions";
+import {
+  createSession,
+  deleteSession,
+  getSession,
+  listSessions,
+} from "./api/savedSessions";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
@@ -72,6 +77,9 @@ vi.mock("./api/savedSessions", async (importOriginal) => {
   return {
     ...actual,
     createSession: vi.fn(),
+    deleteSession: vi.fn(),
+    getSession: vi.fn(),
+    listSessions: vi.fn(),
   };
 });
 
@@ -385,6 +393,10 @@ describe("App", () => {
     vi.mocked(exportCleanedCsv).mockReset();
     vi.mocked(generateCleaningReport).mockReset();
     vi.mocked(createSession).mockReset();
+    vi.mocked(deleteSession).mockReset();
+    vi.mocked(getSession).mockReset();
+    vi.mocked(listSessions).mockReset();
+    vi.stubGlobal("confirm", vi.fn(() => true));
   });
 
   it("renders the DataPulse product foundation screen", () => {
@@ -634,7 +646,7 @@ describe("App", () => {
     expect(screen.getByText("Download cleaned CSV")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open HTML Cleaning Report" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Save Cleaning Session" })).toBeInTheDocument();
-    expect(screen.getByText(/Original uploaded files are not stored/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
     expect(vi.mocked(generateCleaningPreview)).toHaveBeenCalledWith(
       expect.any(File),
       expect.arrayContaining(["trim_whitespace"]),
@@ -923,6 +935,79 @@ describe("App", () => {
 
     await waitFor(() => {
       expect(screen.getByText(/Cleaned CSV export failed/)).toBeInTheDocument();
+    });
+  });
+
+  it("renders empty saved history state", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [], total_count: 0 });
+    render(<App />);
+
+    expect(screen.getByText("Saved cleaning sessions")).toBeInTheDocument();
+    expect(
+      screen.getByText("Save a cleaning session to review your data preparation history."),
+    ).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+
+    await waitFor(() => {
+      expect(vi.mocked(listSessions)).toHaveBeenCalled();
+    });
+  });
+
+  it("renders saved sessions list and detail", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "Saved sessions table" })).toBeInTheDocument();
+    });
+    expect(screen.getByRole("cell", { name: "messy.csv" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "91" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Saved session detail")).toBeInTheDocument();
+    });
+    expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
+    expect(screen.getByText(/trim_whitespace/)).toBeInTheDocument();
+  });
+
+  it("deletes a saved session after confirmation", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(deleteSession).mockResolvedValue(undefined);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Delete" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Saved session detail")).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Deleted saved session #7.")).toBeInTheDocument();
+    });
+    expect(vi.mocked(deleteSession)).toHaveBeenCalledWith(7);
+    expect(screen.queryByLabelText("Saved session detail")).not.toBeInTheDocument();
+  });
+
+  it("renders saved history error state", async () => {
+    vi.mocked(listSessions).mockRejectedValue(new Error("backend down"));
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Loading saved sessions failed/)).toBeInTheDocument();
     });
   });
 

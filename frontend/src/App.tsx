@@ -34,6 +34,11 @@ import {
 import {
   SavedSessionsError,
   createSession,
+  deleteSession,
+  getSession,
+  listSessions,
+  type SavedCleaningSessionDetail,
+  type SavedCleaningSessionSummary,
   type SavedCleaningSessionCreate,
 } from "./api/savedSessions";
 
@@ -187,6 +192,14 @@ function buildSessionPayload(
   };
 }
 
+function numberOrDash(value: number | null | undefined): string {
+  return value === null || value === undefined ? "-" : String(value);
+}
+
+function formatDateTime(value: string): string {
+  return new Date(value).toLocaleString();
+}
+
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] =
@@ -206,6 +219,11 @@ function App() {
   const [reportSuccessMessage, setReportSuccessMessage] = useState<string | null>(null);
   const [saveSessionErrorMessage, setSaveSessionErrorMessage] = useState<string | null>(null);
   const [saveSessionSuccessMessage, setSaveSessionSuccessMessage] = useState<string | null>(null);
+  const [historyErrorMessage, setHistoryErrorMessage] = useState<string | null>(null);
+  const [historySuccessMessage, setHistorySuccessMessage] = useState<string | null>(null);
+  const [savedSessions, setSavedSessions] = useState<SavedCleaningSessionSummary[]>([]);
+  const [selectedSavedSession, setSelectedSavedSession] =
+    useState<SavedCleaningSessionDetail | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
@@ -213,6 +231,8 @@ function App() {
   const [isExportingCsv, setIsExportingCsv] = useState(false);
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [isSavingSession, setIsSavingSession] = useState(false);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [isDeletingSessionId, setIsDeletingSessionId] = useState<number | null>(null);
 
   const clearReportStatus = () => {
     setReportErrorMessage(null);
@@ -460,6 +480,9 @@ function App() {
         ),
       );
       setSaveSessionSuccessMessage(`Saved session #${saved.id} locally.`);
+      setSavedSessions((currentSessions) => [saved, ...currentSessions]);
+      setSelectedSavedSession(saved);
+      setHistorySuccessMessage("History updated with the latest saved session.");
     } catch (error) {
       setSaveSessionErrorMessage(
         error instanceof SavedSessionsError
@@ -538,6 +561,72 @@ function App() {
       );
     } finally {
       setIsGeneratingReport(false);
+    }
+  };
+
+  const handleLoadHistory = async () => {
+    setIsLoadingHistory(true);
+    setHistoryErrorMessage(null);
+    setHistorySuccessMessage(null);
+
+    try {
+      const response = await listSessions();
+      setSavedSessions(response.sessions);
+      if (response.sessions.length === 0) {
+        setSelectedSavedSession(null);
+      }
+    } catch (error) {
+      setHistoryErrorMessage(
+        error instanceof SavedSessionsError
+          ? error.message
+          : "Loading saved sessions failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleOpenSessionDetail = async (sessionId: number) => {
+    setHistoryErrorMessage(null);
+    setHistorySuccessMessage(null);
+
+    try {
+      setSelectedSavedSession(await getSession(sessionId));
+    } catch (error) {
+      setHistoryErrorMessage(
+        error instanceof SavedSessionsError
+          ? error.message
+          : "Loading saved session detail failed. Confirm the backend is running and try again.",
+      );
+    }
+  };
+
+  const handleDeleteSession = async (sessionId: number) => {
+    if (!window.confirm("Delete this saved cleaning session? Original uploaded files are not stored.")) {
+      return;
+    }
+
+    setIsDeletingSessionId(sessionId);
+    setHistoryErrorMessage(null);
+    setHistorySuccessMessage(null);
+
+    try {
+      await deleteSession(sessionId);
+      setSavedSessions((currentSessions) =>
+        currentSessions.filter((session) => session.id !== sessionId),
+      );
+      if (selectedSavedSession?.id === sessionId) {
+        setSelectedSavedSession(null);
+      }
+      setHistorySuccessMessage(`Deleted saved session #${sessionId}.`);
+    } catch (error) {
+      setHistoryErrorMessage(
+        error instanceof SavedSessionsError
+          ? error.message
+          : "Deleting saved session failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsDeletingSessionId(null);
     }
   };
 
@@ -1300,6 +1389,188 @@ function App() {
           </div>
         </section>
       )}
+
+      <section className="history-workspace" aria-labelledby="history-title">
+        <div className="section-heading">
+          <p className="eyebrow">History</p>
+          <h2 id="history-title">Saved cleaning sessions</h2>
+        </div>
+
+        <div className="history-result">
+          <div className="history-header">
+            <div>
+              <span className="status-label">Saved locally</span>
+              <h3>Review local cleaning history</h3>
+              <p>
+                History stores cleaning summaries and metadata in local SQLite.
+                Original uploaded files are not stored.
+              </p>
+            </div>
+            <button
+              className="secondary-action"
+              type="button"
+              disabled={isLoadingHistory}
+              onClick={handleLoadHistory}
+            >
+              {isLoadingHistory ? "Loading history..." : "Load Saved Sessions"}
+            </button>
+          </div>
+
+          {historySuccessMessage && (
+            <p className="export-status success">{historySuccessMessage}</p>
+          )}
+          {historyErrorMessage && (
+            <p className="export-status error">{historyErrorMessage}</p>
+          )}
+
+          {savedSessions.length === 0 ? (
+            <div className="history-empty">
+              <h3>Save a cleaning session to review your data preparation history.</h3>
+              <p>Saved history is metadata-first and local to this backend instance.</p>
+            </div>
+          ) : (
+            <div className="history-grid">
+              <div className="table-scroll" role="region" aria-label="Saved sessions table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>File</th>
+                      <th>Type</th>
+                      <th>Sheet</th>
+                      <th>Score</th>
+                      <th>Rules</th>
+                      <th>Rows</th>
+                      <th>Columns</th>
+                      <th>Created</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {savedSessions.map((session) => (
+                      <tr key={session.id}>
+                        <td>{session.source_filename}</td>
+                        <td>{session.detected_extension}</td>
+                        <td>{session.selected_sheet_name ?? "-"}</td>
+                        <td>{numberOrDash(session.quality_score)}</td>
+                        <td>{session.selected_rules_count}</td>
+                        <td>
+                          {numberOrDash(session.rows_before)} {"->"} {numberOrDash(session.rows_after)}
+                        </td>
+                        <td>
+                          {numberOrDash(session.columns_before)} {"->"}{" "}
+                          {numberOrDash(session.columns_after)}
+                        </td>
+                        <td>{formatDateTime(session.created_at)}</td>
+                        <td>
+                          <div className="history-actions">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenSessionDetail(session.id)}
+                            >
+                              View Detail
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isDeletingSessionId === session.id}
+                              onClick={() => handleDeleteSession(session.id)}
+                            >
+                              {isDeletingSessionId === session.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedSavedSession && (
+                <article className="session-detail" aria-label="Saved session detail">
+                  <h3>{selectedSavedSession.source_filename}</h3>
+                  <p>{selectedSavedSession.storage_note}</p>
+                  <div className="summary-grid compact-summary">
+                    <article>
+                      <span>Quality score</span>
+                      <strong>{numberOrDash(selectedSavedSession.quality_score)}</strong>
+                      <p>{selectedSavedSession.total_issue_count} issues</p>
+                    </article>
+                    <article>
+                      <span>Rules</span>
+                      <strong>{selectedSavedSession.selected_rules_count}</strong>
+                      <p>selected rules</p>
+                    </article>
+                  </div>
+                  <dl className="detail-list">
+                    <div>
+                      <dt>Selected rules</dt>
+                      <dd>{selectedSavedSession.selected_rules.join(", ")}</dd>
+                    </div>
+                    <div>
+                      <dt>Structure</dt>
+                      <dd>
+                        {String(
+                          selectedSavedSession.structure_summary.detected_column_count ?? "-",
+                        )}{" "}
+                        columns,{" "}
+                        {String(selectedSavedSession.structure_summary.preview_row_count ?? "-")}{" "}
+                        preview rows
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Cleaning</dt>
+                      <dd>
+                        Rows {numberOrDash(selectedSavedSession.rows_before)} {"->"}{" "}
+                        {numberOrDash(selectedSavedSession.rows_after)}, columns{" "}
+                        {numberOrDash(selectedSavedSession.columns_before)} {"->"}{" "}
+                        {numberOrDash(selectedSavedSession.columns_after)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Export</dt>
+                      <dd>{String(selectedSavedSession.export_summary.format ?? "CSV")}</dd>
+                    </div>
+                  </dl>
+                  {selectedSavedSession.preview_snapshot && (
+                    <div className="preview-panel">
+                      <div className="preview-heading">
+                        <h3>Saved cleaned preview snapshot</h3>
+                        <p>Snapshot is stored as metadata, not the original file.</p>
+                      </div>
+                      <div className="table-scroll" role="region" aria-label="Saved preview table">
+                        <table>
+                          <thead>
+                            <tr>
+                              {Array.isArray(selectedSavedSession.preview_snapshot.columns) &&
+                                selectedSavedSession.preview_snapshot.columns.map((column) => (
+                                  <th key={String(column)}>{String(column)}</th>
+                                ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {Array.isArray(selectedSavedSession.preview_snapshot.rows) &&
+                              selectedSavedSession.preview_snapshot.rows.map((row, rowIndex) => (
+                                <tr key={`saved-${rowIndex}`}>
+                                  {Array.isArray(row) &&
+                                    row.map((cell, cellIndex) => (
+                                      <td key={`${cellIndex}-${String(cell)}`}>{String(cell)}</td>
+                                    ))}
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                  <p className="future-note">
+                    Saved history is local only. Cloud sync, authentication, and saved source files
+                    are not implemented.
+                  </p>
+                </article>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="workflow" aria-labelledby="workflow-title">
         <div className="section-heading">

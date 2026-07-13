@@ -32,6 +32,7 @@ body {
 .structure-workspace,
 .quality-workspace,
 .cleaning-workspace,
+.history-workspace,
 .workflow {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
@@ -332,7 +333,8 @@ dd {
 .structure-result,
 .quality-empty,
 .quality-result,
-.cleaning-result {
+.cleaning-result,
+.history-result {
   padding: 22px;
 }
 
@@ -347,6 +349,10 @@ dd {
 }
 
 .cleaning-workspace {
+  padding: 12px 0 44px;
+}
+
+.history-workspace {
   padding: 12px 0 44px;
 }
 
@@ -488,6 +494,76 @@ dd {
 .export-status.error {
   background: #f8e8df;
   color: #8b3f18;
+}
+
+.history-header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, auto);
+  gap: 18px;
+  align-items: end;
+}
+
+.history-header h3,
+.history-empty h3,
+.session-detail h3 {
+  margin-bottom: 8px;
+  color: #102027;
+}
+
+.history-header p,
+.history-empty p,
+.session-detail p {
+  color: #52636b;
+  line-height: 1.55;
+}
+
+.history-grid,
+.history-empty,
+.session-detail {
+  margin-top: 18px;
+}
+
+.history-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.history-actions button {
+  min-height: 36px;
+  border: 1px solid #20746b;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #195d56;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.history-actions button:disabled {
+  border-color: #8aa5a1;
+  color: #697a82;
+  cursor: wait;
+}
+
+.session-detail {
+  border: 1px solid #d7e0e4;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 18px;
+}
+
+.detail-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.detail-list div {
+  border: 1px solid #e7edef;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .warning-panel,
@@ -773,6 +849,7 @@ h2 {
   .structure-workspace,
   .quality-workspace,
   .cleaning-workspace,
+  .history-workspace,
   .workflow {
     width: min(100% - 28px, 1120px);
   }
@@ -794,6 +871,7 @@ h2 {
   .selected-file dl,
   .result-metadata,
   .summary-grid,
+  .history-header,
   .sheet-selector,
   .sheet-list,
   .issue-card-grid,
