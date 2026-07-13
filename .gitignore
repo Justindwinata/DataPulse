@@ -23,6 +23,8 @@ vite.config.d.ts
 .env
 .env.*
 !.env.example
+backend/data/*.sqlite3
+backend/data/*.sqlite3-*
 
 # Editor
 .idea/
