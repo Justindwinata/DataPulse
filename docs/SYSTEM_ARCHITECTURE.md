@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0003 adds CSV-like structure detection and raw preview while keeping Excel parsing and cleaning out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend and a React frontend. DP-0004 adds Excel sheet discovery and selected sheet raw preview while keeping cleaning and export out of scope.
 
 ## Repository Layout
 
@@ -38,6 +38,8 @@ Domain contracts live under `datapulse_api.models`. File validation logic lives 
 
 CSV-like structure detection logic lives in `datapulse_api.services.csv_structure_detection`. It uses bounded byte sampling, Python's csv module, deterministic delimiter scoring, simple header heuristics, row-width normalization for preview display, and structured warnings.
 
+Excel structure detection logic lives in `datapulse_api.services.excel_structure_detection`. It uses `openpyxl` for `.xlsx`, `xlrd` for compatible `.xls`, bounded row sampling, deterministic header heuristics, selected sheet metadata, preview normalization, and structured warnings. Excel previews are values-only.
+
 Current upload validation rules:
 
 - Supported extensions: `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`
@@ -50,15 +52,23 @@ Current upload validation rules:
 Current CSV-like structure detection rules:
 
 - Supported extensions: `.csv`, `.tsv`, `.txt`
-- Excel extensions return a later-milestone limitation
 - Delimiter candidates: comma, semicolon, tab, pipe
 - Preview rows are capped at 20
 - Sample rows are capped and do not imply full-file row count
 - Warning codes describe messy structure without cleaning the data
 
+Current Excel structure detection rules:
+
+- Supported extensions: `.xlsx`, `.xls`
+- Workbook discovery returns sheet names, sheet count, default sheet, and sheet metadata
+- Selected sheet preview requires `sheet_name`
+- Preview rows are capped at 20
+- Detection rows are sampled and do not imply full workbook profiling
+- Formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, and styling are not preserved
+
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. DP-0003 extends the upload workspace with a Detect Structure action for accepted CSV-like files, structure summary cards, warning panel, and a scroll-safe raw preview table. It does not display fake cleaned data or fake Excel previews.
+The frontend is a Vite React application written in TypeScript. DP-0004 extends the upload workspace with Excel workbook discovery, a sheet selector, selected sheet preview, structure summary cards, warning panel, and a scroll-safe raw preview table. It does not display fake cleaned data or claim Excel formatting preservation.
 
 ## Future Processing Flow
 
@@ -85,7 +95,7 @@ The frontend is a Vite React application written in TypeScript. DP-0003 extends 
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0003
+- No deployment in DP-0004
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage

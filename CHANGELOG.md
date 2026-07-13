@@ -2,6 +2,23 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.4.0 - DP-0004 Excel Sheet Detection and Raw Preview
+
+### Added
+
+- Added Excel workbook metadata and selected sheet response contracts.
+- Added `openpyxl` and `xlrd` backend dependencies.
+- Added Excel workbook sheet discovery service.
+- Added selected Excel sheet bounded raw preview detection.
+- Added warnings for empty sheets, empty rows, empty columns, duplicate headers, missing headers, missing selected sheets, sample limits, and Excel preview limitations.
+- Integrated Excel workbook discovery and selected sheet preview into `POST /files/detect-structure`.
+- Added frontend sheet selector and selected sheet preview workflow.
+- Preserved CSV, TSV, and TXT structure detection behavior.
+
+### Not Included
+
+- Full data quality profiling, cleaning engine, cleaned CSV export, HTML reports, saved history, AI/LLM cleaning, authentication, deployment, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.3.0 - DP-0003 CSV Structure Detection and Raw Preview
 
 ### Added

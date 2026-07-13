@@ -35,3 +35,11 @@ DP-0003 implements structure detection only for CSV, TSV, and TXT files. Excel f
 ## 2026-07-12 - Bounded Preview Over Full-File Parsing
 
 Structure detection reads bounded samples and returns capped preview rows. Full-file row counts, profiling, cleaning, and export are deferred to later milestones to avoid overbuilding and unsafe memory behavior.
+
+## 2026-07-13 - Excel Preview Is Values-Only
+
+DP-0004 treats Excel workbooks as sources of table-like values. It does not preserve formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, or workbook styling.
+
+## 2026-07-13 - Sheet Selection Before Excel Preview
+
+Excel workbook discovery and sheet preview are separate steps. The first call returns sheet metadata; a second call with `sheet_name` returns bounded raw preview for the selected sheet.

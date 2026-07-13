@@ -42,6 +42,19 @@ DP-0003 adds CSV-like structure detection and raw preview:
 
 Structure detection reads only a bounded sample for CSV-like files and does not store files permanently.
 
+DP-0004 adds Excel sheet discovery and raw sheet preview:
+
+- `.xlsx` workbook support through `openpyxl`
+- `.xls` workbook support through `xlrd` where the uploaded workbook is compatible
+- Workbook sheet discovery with sheet names, count, default sheet, and sheet metadata
+- Selected sheet preview through optional `sheet_name` form field
+- Header detection and generated column names for table-like sheets
+- Bounded Excel preview with up to 20 preview rows
+- Excel warnings for empty sheets, empty rows, empty columns, duplicate headers, missing headers, selected sheet not found, and sample limits
+- Frontend sheet selector and selected sheet raw preview
+
+Excel previews are values-only. Formatting, formulas as formulas, merged cell behavior, charts, pivot tables, macros, and workbook styling are not preserved.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -59,7 +72,7 @@ Structure detection reads only a bounded sample for CSV-like files and does not 
 
 - File upload validation exists, but files are not parsed or stored permanently
 - CSV/TSV/TXT structure detection and bounded raw preview exist
-- Excel sheet parsing is not implemented yet
+- Excel sheet discovery and selected sheet raw preview exist for table-like workbooks
 - No full data quality profiling yet
 - No cleaning engine yet
 - No cleaned CSV export yet
@@ -69,7 +82,7 @@ Structure detection reads only a bounded sample for CSV-like files and does not 
 - No authentication
 - No deployment
 
-Excel support will focus on table-like sheets. DataPulse does not aim to preserve workbook formatting, formulas, charts, merged-cell layouts, macros, or presentation styling. Cleaned export is CSV-first.
+Excel support focuses on table-like sheets. DataPulse does not preserve workbook formatting, formulas as formulas, charts, merged-cell behavior, macros, pivot tables, or presentation styling. Cleaned export remains CSV-first and is planned for a later milestone.
 
 ## Tech Stack
 
@@ -168,13 +181,18 @@ The upload validation endpoint accepts one `file` field and returns structured m
 - Next step metadata
 - `structure_detection_available: false`
 
-CSV-like structure detection:
+Structure detection and raw preview:
 
 ```http
 POST /files/detect-structure
 Content-Type: multipart/form-data
 ```
 
-The structure detection endpoint accepts one `file` field. It supports `.csv`, `.tsv`, and `.txt` files, returns delimiter/header/column metadata, bounded preview rows, and structured warnings. Excel files return an honest later-milestone message instead of a fake preview.
+The structure detection endpoint accepts one `file` field. It supports `.csv`, `.tsv`, and `.txt` files, returns delimiter/header/column metadata, bounded preview rows, and structured warnings.
+
+For Excel workbooks, the same endpoint supports two modes:
+
+- Without `sheet_name`: returns workbook sheet discovery metadata.
+- With `sheet_name`: returns selected sheet header/column metadata, warnings, and bounded raw preview rows.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules, while clearly stating that parsing, cleaning, export, reports, and history are not implemented yet.

@@ -33,6 +33,8 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Detect workbook sheets for `.xlsx` and `.xls`.
 - Support table-like sheet previews.
 - Avoid claiming Excel formatting preservation.
+- Add frontend sheet selector and selected sheet preview.
+- Status: implemented for table-like Excel sheets.
 
 ## DP-0005 - Rule-Based Cleaning Engine
 
