@@ -1,9 +1,14 @@
 from fastapi import APIRouter, Form, UploadFile
 
 from datapulse_api.models import (
+    CleaningPreviewResult,
     DataQualityResult,
     FileUploadValidationResponse,
     StructureDetectionResult,
+)
+from datapulse_api.services.cleaning_engine import (
+    generate_cleaning_preview,
+    parse_cleaning_rules,
 )
 from datapulse_api.services.csv_structure_detection import detect_csv_like_structure
 from datapulse_api.services.data_quality import detect_data_quality
@@ -65,5 +70,21 @@ async def detect_quality(
         filename=file.filename or "uploaded_file",
         content_type=file.content_type,
         content=content,
+        sheet_name=sheet_name,
+    )
+
+
+@router.post("/apply-cleaning-preview")
+async def apply_cleaning_preview(
+    file: UploadFile,
+    rules: list[str] | None = Form(default=None),
+    sheet_name: str | None = Form(default=None),
+) -> CleaningPreviewResult:
+    content = await file.read()
+    return generate_cleaning_preview(
+        filename=file.filename or "uploaded_file",
+        content_type=file.content_type,
+        content=content,
+        rules=parse_cleaning_rules(rules),
         sheet_name=sheet_name,
     )
