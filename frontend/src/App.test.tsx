@@ -1023,6 +1023,99 @@ describe("App", () => {
     expect(scrollIntoView).toHaveBeenCalled();
   });
 
+  it("preselects restored rules after quality analysis and allows editing", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(getSavedSessionRules).mockResolvedValue({
+      session_id: 7,
+      source_filename: "messy.csv",
+      selected_rules: ["trim_whitespace", "remove_empty_rows"],
+      selected_rules_count: 2,
+      created_at: "2026-07-14T00:00:00Z",
+      original_file_storage_note: "Original uploaded files are not stored by DataPulse.",
+      new_upload_required_note: "Upload a new file before applying these restored cleaning rules.",
+    });
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue({
+      ...qualityResponse,
+      issues: [],
+    });
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "View Detail" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Reuse Cleaning Rules" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reuse Cleaning Rules" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Restored cleaning rules")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "new.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Trim whitespace/)).toBeChecked();
+    });
+    expect(screen.getByLabelText(/Remove empty rows/)).toBeChecked();
+    expect(screen.getAllByText("Restored")).toHaveLength(2);
+
+    fireEvent.click(screen.getByLabelText(/Trim whitespace/));
+
+    expect(screen.getByLabelText(/Trim whitespace/)).not.toBeChecked();
+    expect(screen.getByLabelText(/Remove empty rows/)).toBeChecked();
+  });
+
+  it("clears restored rules without deleting the saved session", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(getSavedSessionRules).mockResolvedValue({
+      session_id: 7,
+      source_filename: "messy.csv",
+      selected_rules: ["trim_whitespace", "remove_empty_rows"],
+      selected_rules_count: 2,
+      created_at: "2026-07-14T00:00:00Z",
+      original_file_storage_note: "Original uploaded files are not stored by DataPulse.",
+      new_upload_required_note: "Upload a new file before applying these restored cleaning rules.",
+    });
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "View Detail" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Reuse Cleaning Rules" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reuse Cleaning Rules" }));
+    await waitFor(() => {
+      expect(screen.getByLabelText("Restored cleaning rules")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear restored rules" }));
+
+    expect(screen.queryByLabelText("Restored cleaning rules")).not.toBeInTheDocument();
+    expect(vi.mocked(deleteSession)).not.toHaveBeenCalled();
+  });
+
   it("opens a saved HTML report from session detail", async () => {
     vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
     vi.mocked(getSession).mockResolvedValue(savedSessionDetail);

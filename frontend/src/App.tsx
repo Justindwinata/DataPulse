@@ -267,6 +267,11 @@ function App() {
   };
 
   const clearRestoredRuleSet = () => {
+    if (restoredRuleSet) {
+      setSelectedRules((currentRules) =>
+        currentRules.filter((rule) => !restoredRuleSet.selectedRules.includes(rule)),
+      );
+    }
     setRestoredRuleSet(null);
   };
 
@@ -414,12 +419,16 @@ function App() {
     try {
       const result = await detectDataQuality(selectedFile, sheetName || undefined);
       setQualityResult(result);
+      const recommendedRules = new Set(
+        cleaningRules
+          .filter((rule) => result.issues.some((issue) => rule.issueCodes.includes(issue.code)))
+          .map((rule) => rule.code),
+      );
+      const restoredRules = new Set(restoredRuleSet?.selectedRules ?? []);
       setSelectedRules(
         cleaningRules
-          .filter((rule) =>
-            result.issues.some((issue) => rule.issueCodes.includes(issue.code)),
-          )
-          .map((rule) => rule.code),
+          .map((rule) => rule.code)
+          .filter((ruleCode) => recommendedRules.has(ruleCode) || restoredRules.has(ruleCode)),
       );
     } catch (error) {
       setQualityErrorMessage(
@@ -731,6 +740,7 @@ function App() {
     ["xlsx", "xls"].includes(validationResult.detected_extension);
   const affectedColumns = qualityResult ? uniqueAffectedColumns(qualityResult.issues) : [];
   const detectedIssueCodes = new Set(qualityResult?.issues.map((issue) => issue.code) ?? []);
+  const restoredRuleCodes = new Set(restoredRuleSet?.selectedRules ?? []);
 
   return (
     <main className="app-shell">
@@ -1247,6 +1257,7 @@ function App() {
                 const isRecommended = rule.issueCodes.some((issueCode) =>
                   detectedIssueCodes.has(issueCode),
                 );
+                const isRestored = restoredRuleCodes.has(rule.code);
                 return (
                   <label className="rule-card" key={rule.code}>
                     <input
@@ -1257,6 +1268,7 @@ function App() {
                     <span>
                       <strong>{rule.label}</strong>
                       {isRecommended && <em>Recommended</em>}
+                      {isRestored && <em>Restored</em>}
                     </span>
                     <p>{rule.description}</p>
                   </label>
