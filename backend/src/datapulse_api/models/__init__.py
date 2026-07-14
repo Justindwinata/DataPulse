@@ -67,6 +67,13 @@ from datapulse_api.models.structure_detection import (
     StructureWarning,
     StructureWarningSeverity,
 )
+from datapulse_api.models.templates import (
+    WorkflowTemplateCreate,
+    WorkflowTemplateDetail,
+    WorkflowTemplateListResponse,
+    WorkflowTemplateSummary,
+    WorkflowTemplateUpdate,
+)
 
 __all__ = [
     "CleaningIssue",
@@ -124,4 +131,9 @@ __all__ = [
     "StructureNextStep",
     "StructureWarning",
     "StructureWarningSeverity",
+    "WorkflowTemplateCreate",
+    "WorkflowTemplateDetail",
+    "WorkflowTemplateListResponse",
+    "WorkflowTemplateSummary",
+    "WorkflowTemplateUpdate",
 ]
