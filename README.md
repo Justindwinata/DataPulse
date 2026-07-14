@@ -4,6 +4,34 @@ DataPulse is a deterministic messy CSV and Excel cleaner studio. It helps users 
 
 DataPulse is not an AI cleaning tool and does not claim perfect automatic cleaning. The product direction is deliberately rule-based: users should be able to see what was detected, choose which transformations to apply, and review what changed.
 
+## Portfolio Demo Snapshot
+
+DataPulse is now prepared for local portfolio demos. It includes:
+
+- File validation for CSV, TSV, TXT, XLSX, and compatible XLS files
+- CSV/TSV/TXT delimiter, header, structure, and raw preview detection
+- Excel workbook sheet discovery and selected sheet preview
+- Deterministic data quality profiling and heuristic quality score
+- Rule-based cleaning preview with transparent rule effects
+- Cleaned CSV download
+- Standalone HTML cleaning reports
+- Local SQLite saved cleaning sessions
+- Saved-session HTML report replay
+- Saved rule restore and named workflow templates
+- Synthetic demo files in `demo/`
+- Demo script, QA checklist, and portfolio notes in `docs/`
+
+## Screenshots
+
+Screenshots are not committed yet. Recommended captures for GitHub/LinkedIn:
+
+- Main workflow with upload validation and stage cards
+- Data quality issue summary
+- Cleaned preview and CSV export panel
+- HTML cleaning report
+- History detail with saved report replay
+- Templates library and apply workflow
+
 ## Current Scope
 
 DP-0001 established the product and engineering foundation:
@@ -156,6 +184,18 @@ DP-0012 adds named saved workflow templates:
 
 Templates store only reusable cleaning rules and metadata. They do not store original uploaded files, raw source data, cleaned CSV files, or anything that can reprocess data without a fresh upload.
 
+DP-0013 stabilizes the product for portfolio demo readiness:
+
+- Added QA checklist, demo script, portfolio notes, and synthetic demo files
+- Added clearer navigation for Workflow, History, and Templates
+- Added workflow stage cards from upload through export/report/save
+- Improved empty, loading, and backend-down error copy
+- Added visible focus states and keyboard-focusable table regions
+- Polished responsive behavior for desktop, tablet, and narrow mobile widths
+- Stabilized template ordering so recently edited templates appear first
+
+DP-0013 does not add major new product features. It focuses on cohesion, demo clarity, and reliability.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -171,6 +211,7 @@ Templates store only reusable cleaning rules and metadata. They do not store ori
 11. Open saved HTML reports from local history.
 12. Reuse saved cleaning rule sets on a newly uploaded file.
 13. Save and apply named workflow templates on future uploads.
+14. Run a guided local portfolio demo with synthetic files and a QA checklist.
 
 ## Current Limitations
 
@@ -185,6 +226,7 @@ Templates store only reusable cleaning rules and metadata. They do not store ori
 - Saved-session HTML report replay exists
 - Saved rule set restore exists
 - Named workflow templates exist
+- Product demo materials and QA checklist exist
 - Original uploaded files are not stored in history
 - Saved reports cannot reprocess original files
 - Saved rule sets require a fresh upload before real processing/export
@@ -238,6 +280,29 @@ Frontend app:
 cd frontend
 npm run dev
 ```
+
+## Demo Walkthrough
+
+Primary demo path:
+
+1. Start backend and frontend.
+2. Upload `demo/messy_sales.csv`.
+3. Validate upload.
+4. Detect structure and show raw preview.
+5. Analyze data quality.
+6. Select cleaning rules and generate cleaned preview.
+7. Download cleaned CSV.
+8. Open live HTML report.
+9. Save the cleaning session.
+10. Open History, view detail, and open saved HTML report.
+11. Reuse saved rules on `demo/messy_students.tsv`.
+12. Create, edit, apply, and delete a workflow template.
+
+Detailed script: [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md)
+
+QA checklist: [docs/QA_CHECKLIST.md](docs/QA_CHECKLIST.md)
+
+Portfolio talking points: [docs/PORTFOLIO_NOTES.md](docs/PORTFOLIO_NOTES.md)
 
 ## Testing
 

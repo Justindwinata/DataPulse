@@ -111,3 +111,11 @@ DP-0012 workflow templates store reusable cleaning rule codes, names, descriptio
 ## 2026-07-15 - Template Application Reuses Restore State
 
 Applying a template uses the same frontend preselection boundary as saved rule restore. Template rules can help users start faster, but the current uploaded file still drives validation, structure detection, quality recommendations, cleaning preview, export, and report generation.
+
+## 2026-07-15 - Stabilize Before Expanding Features
+
+DP-0013 prioritizes navigation, copy, responsive polish, QA documentation, demo files, and small reliability fixes instead of adding new product surface. This keeps DataPulse credible as a portfolio project and avoids scope creep before deployment, auth, cloud sync, PDF export, XLSX export, or risky conversions exist.
+
+## 2026-07-15 - Demo Data Must Be Synthetic
+
+Committed demo files use fictional CSV/TSV rows only. They demonstrate common messy-data patterns without storing private data or implying that DataPulse needs permanent source-file storage.

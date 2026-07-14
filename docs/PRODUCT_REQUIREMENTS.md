@@ -68,6 +68,7 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0010: saved-session HTML report replay from local history without original file re-upload.
 - DP-0011: saved rule set restore for applying prior rule selections to a newly uploaded file.
 - DP-0012: named workflow templates for saving, editing, applying, and deleting reusable cleaning rule sets.
+- DP-0013: product stabilization, UX polish, QA checklist, demo script, and portfolio demo materials.
 
 ## Cleaning Model
 
@@ -90,3 +91,5 @@ DP-0010 generates saved-session HTML reports from stored metadata. Reports are u
 DP-0011 restores selected cleaning rule codes from saved sessions. Restored rules are preselected only after a new file is uploaded, structured, and profiled. Users can edit or clear restored rules. Saved sessions do not restore files, reprocess saved data, regenerate cleaned CSV, or create full live reports from old uploads.
 
 DP-0012 stores named workflow templates in local SQLite. Templates include a name, optional description, selected cleaning rules, optional source context, and timestamps. Users can create templates from the current workflow or saved session rules, edit template metadata and rules, delete templates, and apply a template to preselect rules for a newly uploaded file. Templates do not store original uploaded files, raw source data, cleaned CSV files, or anything that can process/export data without a fresh upload.
+
+DP-0013 prepares DataPulse for local portfolio demos. It improves navigation, workflow stage clarity, empty/loading/error copy, responsive behavior, focus visibility, QA documentation, and demo materials. It does not add major new product features and does not change the product boundaries around local-only operation, metadata-first persistence, CSV-first export, or deterministic rule-based cleaning.

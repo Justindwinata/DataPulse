@@ -101,10 +101,20 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Preselect template rules on a newly uploaded and profiled file.
 - Status: implemented.
 
+## DP-0013 - Product Stabilization and Demo Readiness
+
+- Add QA checklist, demo script, portfolio notes, and synthetic demo files.
+- Polish Workflow, History, and Templates navigation.
+- Clarify workflow stages from upload through export/report/save.
+- Improve empty, loading, and error states.
+- Improve responsive layout and basic accessibility.
+- Stabilize template ordering after edits.
+- Status: implemented for local portfolio demo readiness.
+
 ## Later Ideas
 
 - Template search, filtering, and import/export as portable JSON.
 - Better type profiling for numeric and date columns.
 - Safer large-file limits and streaming previews.
 - PDF or richer report export options, if needed after the HTML report is stable.
-- Accessibility and keyboard workflow polish.
+- Screenshots and short demo video for GitHub/LinkedIn.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0012 adds named saved workflow templates while keeping uploaded source-file storage, raw source data storage, template-based reprocessing without a fresh upload, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0013 stabilizes the local portfolio demo experience while keeping uploaded source-file storage, raw source data storage, template-based reprocessing without a fresh upload, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
 
 ## Repository Layout
 
@@ -71,6 +71,8 @@ Saved session report composition lives in `datapulse_api.services.saved_session_
 Saved rule set restore uses the selected rule codes stored in saved cleaning session metadata. The `GET /sessions/{session_id}/rules` endpoint returns rule codes and explicit notes that original files are not stored and a new upload is required before applying restored rules.
 
 Workflow template persistence lives in `datapulse_api.services.template_repository`. Templates are local SQLite records stored in the same app database as saved sessions. They store a name, optional description, selected rule codes, optional source session/file context, and timestamps. Templates do not store original uploaded files, raw source rows, cleaned CSV content, or data needed to reprocess a file without a fresh upload.
+
+Product demo materials live in `demo/` and `docs/`. The demo files are synthetic CSV/TSV inputs with fictional data. They are committed only to demonstrate whitespace, missing values, duplicate rows, messy headers, and empty columns.
 
 Current upload validation rules:
 
@@ -162,6 +164,7 @@ Current workflow template rules:
 - Create-from-session copies selected rule codes from saved session metadata without storing original files
 - Applying a template only preselects rules in the frontend workflow
 - A fresh upload is required before template rules can be used for validation, structure detection, quality analysis, cleaning preview, export, or live reports
+- Template lists are ordered by most recently updated first for demo-friendly editing feedback
 - Tests use temporary database paths instead of the local app database
 
 Current saved report replay rules:
@@ -176,6 +179,8 @@ Current saved report replay rules:
 ## Frontend
 
 The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, restored/template rule banners, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, saved session creation, template creation from current rules, and scroll-safe preview tables. The History section lists saved sessions, displays metadata-first detail, shows optional saved preview snapshots, supports saved HTML report replay, supports saved rule set restore, supports template creation from saved session rules, and supports local delete actions. The Templates section lists named templates, supports detail/edit, applies template rules to the current workflow, and deletes local template records.
+
+DP-0013 adds a small navigation layer for Workflow, History, and Templates; stage cards for the main workflow; clearer empty/loading/error states; keyboard-focusable table regions; and visible focus states for interactive controls.
 
 ## Future Processing Flow
 
@@ -192,6 +197,7 @@ The frontend is a Vite React application written in TypeScript. The upload works
 11. Replay saved HTML reports from stored metadata.
 12. Reuse saved rule sets on a newly uploaded file.
 13. Save, manage, and apply named workflow templates to future uploads.
+14. Run local demo and QA scripts with synthetic demo files.
 
 ## Architectural Boundaries
 
@@ -205,7 +211,7 @@ The frontend is a Vite React application written in TypeScript. The upload works
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0012
+- No deployment in DP-0013
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage

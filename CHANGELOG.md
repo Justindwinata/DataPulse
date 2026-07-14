@@ -2,6 +2,28 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.13.0 - DP-0013 Product Stabilization, UX Polish, and Demo Readiness
+
+### Added
+
+- Added product QA checklist, demo script, and portfolio notes.
+- Added fictional demo CSV and TSV files for local walkthroughs.
+- Added Workflow, History, and Templates navigation.
+- Added workflow stage cards from upload through export/report/save.
+- Added keyboard-focusable table regions for scroll-safe data tables.
+
+### Changed
+
+- Improved empty-state, loading-state, and backend-down error copy.
+- Improved focus visibility for links, buttons, inputs, rule cards, template rule editors, and table regions.
+- Improved responsive behavior for desktop, tablet, and narrow mobile widths.
+- Updated README and product docs for portfolio demo readiness.
+- Template listing now sorts by `updated_at` so recently edited templates surface first.
+
+### Not Included
+
+- Major new backend features, AI/LLM cleaning, authentication, cloud sync, deployment, PDF export, XLSX export, or claims of production readiness beyond local portfolio/demo use.
+
 ## 0.12.0 - DP-0012 Named Saved Workflow Templates
 
 ### Added
