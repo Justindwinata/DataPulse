@@ -135,6 +135,8 @@ const acceptedFormats = ".csv,.tsv,.txt,.xlsx,.xls";
 const csvLikeExtensions = new Set(["csv", "tsv", "txt"]);
 const excelExtensions = new Set(["xlsx", "xls"]);
 const issueSeverityOrder: IssueSeverity[] = ["critical", "warning", "info"];
+const backendUnavailableMessage =
+  "Confirm the backend is running, then retry this action. Local demo command: cd backend && python3 -m uvicorn datapulse_api.main:app --reload.";
 const cleaningRules: Array<{
   code: CleaningRuleCode;
   label: string;
@@ -398,7 +400,7 @@ function App() {
       setErrorMessage(
         error instanceof UploadValidationError
           ? error.message
-          : "Upload validation failed. Confirm the backend is running and try again.",
+          : `Upload validation failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsValidating(false);
@@ -435,7 +437,7 @@ function App() {
       setStructureErrorMessage(
         error instanceof StructureDetectionError
           ? error.message
-          : "Structure detection failed. Confirm the backend is running and try again.",
+          : `Structure detection failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsDetectingStructure(false);
@@ -467,7 +469,7 @@ function App() {
       setStructureErrorMessage(
         error instanceof StructureDetectionError
           ? error.message
-          : "Structure detection failed. Confirm the backend is running and try again.",
+          : `Structure detection failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsDetectingStructure(false);
@@ -514,7 +516,7 @@ function App() {
       setQualityErrorMessage(
         error instanceof DataQualityError
           ? error.message
-          : "Data quality analysis failed. Confirm the backend is running and try again.",
+          : `Data quality analysis failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsAnalyzingQuality(false);
@@ -560,7 +562,7 @@ function App() {
       setTemplateErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Saving the workflow template failed. Confirm the backend is running and try again.",
+          : `Saving the workflow template failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsCreatingTemplate(false);
@@ -593,7 +595,7 @@ function App() {
       setCleaningErrorMessage(
         error instanceof CleaningPreviewError
           ? error.message
-          : "Cleaning preview failed. Confirm the backend is running and try again.",
+          : `Cleaning preview failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsGeneratingCleaningPreview(false);
@@ -634,7 +636,7 @@ function App() {
       setSaveSessionErrorMessage(
         error instanceof SavedSessionsError
           ? error.message
-          : "Saving the cleaning session failed. Confirm the backend is running and try again.",
+          : `Saving the cleaning session failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsSavingSession(false);
@@ -670,7 +672,7 @@ function App() {
       setExportErrorMessage(
         error instanceof CleanedCsvExportError
           ? error.message
-          : "Cleaned CSV export failed. Confirm the backend is running and try again.",
+          : `Cleaned CSV export failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsExportingCsv(false);
@@ -704,7 +706,7 @@ function App() {
       setReportErrorMessage(
         error instanceof CleaningReportError
           ? error.message
-          : "HTML cleaning report generation failed. Confirm the backend is running and try again.",
+          : `HTML cleaning report generation failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsGeneratingReport(false);
@@ -726,7 +728,7 @@ function App() {
       setHistoryErrorMessage(
         error instanceof SavedSessionsError
           ? error.message
-          : "Loading saved sessions failed. Confirm the backend is running and try again.",
+          : `Loading saved sessions failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsLoadingHistory(false);
@@ -746,7 +748,7 @@ function App() {
       setHistoryErrorMessage(
         error instanceof SavedSessionsError
           ? error.message
-          : "Loading saved session detail failed. Confirm the backend is running and try again.",
+          : `Loading saved session detail failed. ${backendUnavailableMessage}`,
       );
     }
   };
@@ -778,7 +780,7 @@ function App() {
       setReuseRulesErrorMessage(
         error instanceof SavedSessionsError
           ? error.message
-          : "Restoring saved cleaning rules failed. Confirm the backend is running and try again.",
+          : `Restoring saved cleaning rules failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsRestoringRules(false);
@@ -809,7 +811,7 @@ function App() {
       setReuseRulesErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Saving saved-session rules as a template failed. Confirm the backend is running and try again.",
+          : `Saving saved-session rules as a template failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsCreatingSessionTemplate(false);
@@ -839,7 +841,7 @@ function App() {
       setSavedReportErrorMessage(
         error instanceof SavedSessionsError
           ? error.message
-          : "Saved HTML report generation failed. Confirm the backend is running and try again.",
+          : `Saved HTML report generation failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsGeneratingSavedReport(false);
@@ -861,7 +863,7 @@ function App() {
       setTemplatesErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Loading workflow templates failed. Confirm the backend is running and try again.",
+          : `Loading workflow templates failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsLoadingTemplates(false);
@@ -882,7 +884,7 @@ function App() {
       setTemplatesErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Loading workflow template detail failed. Confirm the backend is running and try again.",
+          : `Loading workflow template detail failed. ${backendUnavailableMessage}`,
       );
     }
   };
@@ -923,7 +925,7 @@ function App() {
       setTemplatesErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Updating workflow template failed. Confirm the backend is running and try again.",
+          : `Updating workflow template failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsSavingTemplateEdit(false);
@@ -951,7 +953,7 @@ function App() {
       setTemplatesErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Applying workflow template failed. Confirm the backend is running and try again.",
+          : `Applying workflow template failed. ${backendUnavailableMessage}`,
       );
     }
   };
@@ -977,7 +979,7 @@ function App() {
       setTemplatesErrorMessage(
         error instanceof WorkflowTemplatesError
           ? error.message
-          : "Deleting workflow template failed. Confirm the backend is running and try again.",
+          : `Deleting workflow template failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsDeletingTemplateId(null);
@@ -1006,7 +1008,7 @@ function App() {
       setHistoryErrorMessage(
         error instanceof SavedSessionsError
           ? error.message
-          : "Deleting saved session failed. Confirm the backend is running and try again.",
+          : `Deleting saved session failed. ${backendUnavailableMessage}`,
       );
     } finally {
       setIsDeletingSessionId(null);
@@ -1050,7 +1052,7 @@ function App() {
         </div>
       </section>
 
-      <section className="upload-workspace" aria-labelledby="upload-title">
+      <section className="upload-workspace" aria-labelledby="upload-title" aria-busy={isValidating}>
         <div className="section-heading">
           <p className="eyebrow">Detection workspace</p>
           <h2 id="upload-title">Validate a file and inspect its raw structure</h2>
@@ -1141,8 +1143,8 @@ function App() {
                 <h3>Validation result will appear here</h3>
                 <p>
                   DataPulse checks extension, size, and upload metadata. It does not parse
-                  rows until structure detection is requested. It does not clean data,
-                  export CSV files, or generate reports in this milestone.
+                  rows until structure detection is requested, and it never stores the
+                  original uploaded file.
                 </p>
               </div>
             )}
@@ -1187,7 +1189,8 @@ function App() {
                 <p className="future-note">
                   Structure detection available:{" "}
                   {canDetectStructure ? "yes for this file" : "not for this file yet"}.
-                  Cleaning, exports, reports, and saved history unlock as the workflow progresses.
+                  Continue step by step to unlock quality analysis, cleaning preview,
+                  export, reports, saved history, and templates.
                 </p>
                 {canDetectStructure && (
                   <button
@@ -1210,7 +1213,11 @@ function App() {
         </div>
       </section>
 
-      <section className="structure-workspace" aria-labelledby="structure-title">
+      <section
+        className="structure-workspace"
+        aria-labelledby="structure-title"
+        aria-busy={isDetectingStructure}
+      >
         <div className="section-heading">
           <p className="eyebrow">Raw preview</p>
           <h2 id="structure-title">Detected structure result</h2>
@@ -1380,7 +1387,7 @@ function App() {
             )}
 
             <p className="future-note">
-              Next: analyze data quality before cleaning rules are implemented.
+              Next: analyze data quality so cleaning recommendations are based on this file.
             </p>
             <button
               className="secondary-action"
@@ -1394,7 +1401,11 @@ function App() {
         )}
       </section>
 
-      <section className="quality-workspace" aria-labelledby="quality-title">
+      <section
+        className="quality-workspace"
+        aria-labelledby="quality-title"
+        aria-busy={isAnalyzingQuality}
+      >
         <div className="section-heading">
           <p className="eyebrow">Data quality</p>
           <h2 id="quality-title">Issue summary and column profile</h2>
@@ -1551,7 +1562,11 @@ function App() {
       </section>
 
       {qualityResult && qualityResult.quality_status === "profiled" && (
-        <section className="cleaning-workspace" aria-labelledby="cleaning-title">
+        <section
+          className="cleaning-workspace"
+          aria-labelledby="cleaning-title"
+          aria-busy={isGeneratingCleaningPreview || isExportingCsv || isGeneratingReport || isSavingSession}
+        >
           <div className="section-heading">
             <p className="eyebrow">Cleaning rules</p>
             <h2 id="cleaning-title">Select rules and preview cleaned data</h2>
@@ -1859,7 +1874,11 @@ function App() {
         </section>
       )}
 
-      <section className="history-workspace" aria-labelledby="history-title">
+      <section
+        className="history-workspace"
+        aria-labelledby="history-title"
+        aria-busy={isLoadingHistory || isGeneratingSavedReport || isRestoringRules}
+      >
         <div className="section-heading">
           <p className="eyebrow">History</p>
           <h2 id="history-title">Saved cleaning sessions</h2>
@@ -2127,7 +2146,11 @@ function App() {
         </div>
       </section>
 
-      <section className="templates-workspace" aria-labelledby="templates-title">
+      <section
+        className="templates-workspace"
+        aria-labelledby="templates-title"
+        aria-busy={isLoadingTemplates || isSavingTemplateEdit || isDeletingTemplateId !== null}
+      >
         <div className="section-heading">
           <p className="eyebrow">Templates</p>
           <h2 id="templates-title">Named workflow templates</h2>
