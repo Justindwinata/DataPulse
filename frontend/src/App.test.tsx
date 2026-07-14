@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import App from "./App";
@@ -28,6 +28,10 @@ import { validateUploadFile, type FileUploadValidationResponse } from "./api/upl
 import {
   createTemplate,
   createTemplateFromSession,
+  deleteTemplate,
+  getTemplate,
+  listTemplates,
+  updateTemplate,
   type WorkflowTemplateDetail,
 } from "./api/workflowTemplates";
 
@@ -98,6 +102,10 @@ vi.mock("./api/workflowTemplates", async (importOriginal) => {
     ...actual,
     createTemplate: vi.fn(),
     createTemplateFromSession: vi.fn(),
+    deleteTemplate: vi.fn(),
+    getTemplate: vi.fn(),
+    listTemplates: vi.fn(),
+    updateTemplate: vi.fn(),
   };
 });
 
@@ -432,6 +440,10 @@ describe("App", () => {
     vi.mocked(listSessions).mockReset();
     vi.mocked(createTemplate).mockReset();
     vi.mocked(createTemplateFromSession).mockReset();
+    vi.mocked(deleteTemplate).mockReset();
+    vi.mocked(getTemplate).mockReset();
+    vi.mocked(listTemplates).mockReset();
+    vi.mocked(updateTemplate).mockReset();
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
 
@@ -1136,6 +1148,141 @@ describe("App", () => {
       }),
     );
     expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
+  });
+
+  it("renders empty workflow templates state", async () => {
+    vi.mocked(listTemplates).mockResolvedValue({ templates: [], total_count: 0 });
+    render(<App />);
+
+    expect(screen.getByText("Named workflow templates")).toBeInTheDocument();
+    expect(screen.getByText("Create a workflow template to reuse cleaning rules.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Templates" }));
+
+    await waitFor(() => {
+      expect(vi.mocked(listTemplates)).toHaveBeenCalled();
+    });
+    expect(screen.getByText(/Templates are local SQLite records/)).toBeInTheDocument();
+  });
+
+  it("lists, edits, applies, and deletes workflow templates", async () => {
+    vi.mocked(listTemplates).mockResolvedValue({
+      templates: [workflowTemplateDetail],
+      total_count: 1,
+    });
+    vi.mocked(getTemplate).mockResolvedValue(workflowTemplateDetail);
+    vi.mocked(updateTemplate).mockResolvedValue({
+      ...workflowTemplateDetail,
+      name: "Updated template",
+      description: "Updated description",
+      selected_rules: ["drop_empty_columns"],
+      selected_rules_count: 1,
+    });
+    vi.mocked(deleteTemplate).mockResolvedValue(undefined);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Templates" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("region", { name: "Workflow templates table" })).toBeInTheDocument();
+    });
+    expect(screen.getByRole("cell", { name: "Sales cleanup" })).toBeInTheDocument();
+    expect(screen.getByRole("cell", { name: "Reusable rules" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "View/Edit" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Workflow template detail")).toBeInTheDocument();
+    });
+    fireEvent.change(screen.getByDisplayValue("Sales cleanup"), {
+      target: { value: "Updated template" },
+    });
+    fireEvent.change(screen.getByDisplayValue("Reusable rules"), {
+      target: { value: "Updated description" },
+    });
+    fireEvent.click(screen.getByLabelText(/Drop empty columns/));
+    fireEvent.click(screen.getByRole("button", { name: "Save Template Changes" }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Updated template "Updated template".')).toBeInTheDocument();
+    });
+    expect(vi.mocked(updateTemplate)).toHaveBeenCalledWith(
+      11,
+      expect.objectContaining({
+        name: "Updated template",
+        description: "Updated description",
+        selected_rules: expect.arrayContaining(["drop_empty_columns"]),
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Apply Template" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Restored cleaning rules")).toBeInTheDocument();
+    });
+    expect(screen.getByText("Applied template: Sales cleanup")).toBeInTheDocument();
+    expect(screen.getByText(/2 rules from Sales cleanup/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Deleted workflow template #11.")).toBeInTheDocument();
+    });
+    expect(vi.mocked(deleteTemplate)).toHaveBeenCalledWith(11);
+  });
+
+  it("preselects template rules after quality analysis and can clear applied template", async () => {
+    vi.mocked(listTemplates).mockResolvedValue({
+      templates: [workflowTemplateDetail],
+      total_count: 1,
+    });
+    vi.mocked(getTemplate).mockResolvedValue(workflowTemplateDetail);
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Templates" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Apply Template" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Apply Template" }));
+    await waitFor(() => {
+      expect(screen.getByText("Applied template: Sales cleanup")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "new-file.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Trim whitespace/)).toBeChecked();
+    });
+    expect(screen.getByLabelText(/Remove empty rows/)).toBeChecked();
+    const ruleRegion = screen.getByText("Select rules and preview cleaned data").closest("section");
+    expect(ruleRegion).not.toBeNull();
+    expect(within(ruleRegion as HTMLElement).getAllByText("Template").length).toBeGreaterThanOrEqual(2);
+
+    fireEvent.click(screen.getByLabelText(/Trim whitespace/));
+    expect(screen.getByLabelText(/Trim whitespace/)).not.toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "Clear restored rules" }));
+
+    expect(screen.queryByLabelText("Restored cleaning rules")).not.toBeInTheDocument();
+    expect(vi.mocked(deleteTemplate)).not.toHaveBeenCalled();
   });
 
   it("preselects restored rules after quality analysis and allows editing", async () => {

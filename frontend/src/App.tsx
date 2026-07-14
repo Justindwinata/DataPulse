@@ -47,6 +47,12 @@ import {
   WorkflowTemplatesError,
   createTemplate,
   createTemplateFromSession,
+  deleteTemplate,
+  getTemplate,
+  listTemplates,
+  updateTemplate,
+  type WorkflowTemplateDetail,
+  type WorkflowTemplateSummary,
 } from "./api/workflowTemplates";
 
 type ProductSection = {
@@ -59,6 +65,8 @@ type RestoredRuleSet = {
   sourceFilename: string;
   selectedRules: CleaningRuleCode[];
   createdAt: string;
+  sourceType: "session" | "template";
+  templateName?: string;
 };
 
 const productSections: ProductSection[] = [
@@ -251,6 +259,13 @@ function App() {
   const [selectedSavedSession, setSelectedSavedSession] =
     useState<SavedCleaningSessionDetail | null>(null);
   const [restoredRuleSet, setRestoredRuleSet] = useState<RestoredRuleSet | null>(null);
+  const [templates, setTemplates] = useState<WorkflowTemplateSummary[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<WorkflowTemplateDetail | null>(null);
+  const [templatesErrorMessage, setTemplatesErrorMessage] = useState<string | null>(null);
+  const [templatesSuccessMessage, setTemplatesSuccessMessage] = useState<string | null>(null);
+  const [editTemplateName, setEditTemplateName] = useState("");
+  const [editTemplateDescription, setEditTemplateDescription] = useState("");
+  const [editTemplateRules, setEditTemplateRules] = useState<CleaningRuleCode[]>([]);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
@@ -264,6 +279,9 @@ function App() {
   const [isRestoringRules, setIsRestoringRules] = useState(false);
   const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
   const [isCreatingSessionTemplate, setIsCreatingSessionTemplate] = useState(false);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [isSavingTemplateEdit, setIsSavingTemplateEdit] = useState(false);
+  const [isDeletingTemplateId, setIsDeletingTemplateId] = useState<number | null>(null);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
   const [sessionTemplateName, setSessionTemplateName] = useState("");
@@ -712,6 +730,7 @@ function App() {
         sourceFilename: ruleSet.source_filename,
         selectedRules: restoredRules,
         createdAt: ruleSet.created_at,
+        sourceType: "session",
       });
       setSelectedRules(restoredRules);
       setHistorySuccessMessage("Restored cleaning rules. Upload a new file to apply them.");
@@ -788,6 +807,144 @@ function App() {
     }
   };
 
+  const handleLoadTemplates = async () => {
+    setIsLoadingTemplates(true);
+    setTemplatesErrorMessage(null);
+    setTemplatesSuccessMessage(null);
+
+    try {
+      const response = await listTemplates();
+      setTemplates(response.templates);
+      if (response.templates.length === 0) {
+        setSelectedTemplate(null);
+      }
+    } catch (error) {
+      setTemplatesErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Loading workflow templates failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  const handleOpenTemplateDetail = async (templateId: number) => {
+    setTemplatesErrorMessage(null);
+    setTemplatesSuccessMessage(null);
+
+    try {
+      const template = await getTemplate(templateId);
+      setSelectedTemplate(template);
+      setEditTemplateName(template.name);
+      setEditTemplateDescription(template.description ?? "");
+      setEditTemplateRules(template.selected_rules);
+    } catch (error) {
+      setTemplatesErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Loading workflow template detail failed. Confirm the backend is running and try again.",
+      );
+    }
+  };
+
+  const handleTemplateRuleToggle = (rule: CleaningRuleCode) => {
+    setEditTemplateRules((currentRules) =>
+      currentRules.includes(rule)
+        ? currentRules.filter((currentRule) => currentRule !== rule)
+        : [...currentRules, rule],
+    );
+  };
+
+  const handleSaveTemplateEdit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedTemplate) {
+      return;
+    }
+    if (editTemplateRules.length === 0) {
+      setTemplatesErrorMessage("Select at least one rule before saving template changes.");
+      return;
+    }
+    setIsSavingTemplateEdit(true);
+    setTemplatesErrorMessage(null);
+    setTemplatesSuccessMessage(null);
+
+    try {
+      const updated = await updateTemplate(selectedTemplate.id, {
+        name: editTemplateName,
+        description: editTemplateDescription || null,
+        selected_rules: editTemplateRules,
+      });
+      setSelectedTemplate(updated);
+      setTemplates((currentTemplates) =>
+        currentTemplates.map((template) => (template.id === updated.id ? updated : template)),
+      );
+      setTemplatesSuccessMessage(`Updated template "${updated.name}".`);
+    } catch (error) {
+      setTemplatesErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Updating workflow template failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsSavingTemplateEdit(false);
+    }
+  };
+
+  const handleApplyTemplate = async (templateId: number) => {
+    setTemplatesErrorMessage(null);
+    setTemplatesSuccessMessage(null);
+
+    try {
+      const template = await getTemplate(templateId);
+      setRestoredRuleSet({
+        sessionId: template.id,
+        sourceFilename: template.name,
+        selectedRules: template.selected_rules,
+        createdAt: template.created_at,
+        sourceType: "template",
+        templateName: template.name,
+      });
+      setSelectedRules(template.selected_rules);
+      setTemplatesSuccessMessage(`Applied template "${template.name}". Upload a new file to use these rules.`);
+      document.getElementById("upload-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      setTemplatesErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Applying workflow template failed. Confirm the backend is running and try again.",
+      );
+    }
+  };
+
+  const handleDeleteTemplate = async (templateId: number) => {
+    if (!window.confirm("Delete this workflow template? Original uploaded files are not stored.")) {
+      return;
+    }
+    setIsDeletingTemplateId(templateId);
+    setTemplatesErrorMessage(null);
+    setTemplatesSuccessMessage(null);
+
+    try {
+      await deleteTemplate(templateId);
+      setTemplates((currentTemplates) =>
+        currentTemplates.filter((template) => template.id !== templateId),
+      );
+      if (selectedTemplate?.id === templateId) {
+        setSelectedTemplate(null);
+      }
+      setTemplatesSuccessMessage(`Deleted workflow template #${templateId}.`);
+    } catch (error) {
+      setTemplatesErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Deleting workflow template failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsDeletingTemplateId(null);
+    }
+  };
+
   const handleDeleteSession = async (sessionId: number) => {
     if (!window.confirm("Delete this saved cleaning session? Original uploaded files are not stored.")) {
       return;
@@ -858,10 +1015,14 @@ function App() {
           <div className="restore-banner" aria-label="Restored cleaning rules">
             <div>
               <span className="status-label">Restored rule set</span>
-              <h3>Cleaning rules restored from saved session</h3>
+              <h3>
+                {restoredRuleSet.sourceType === "template"
+                  ? `Applied template: ${restoredRuleSet.templateName}`
+                  : "Cleaning rules restored from saved session"}
+              </h3>
               <p>
-                {restoredRuleSet.selectedRules.length} rules from {restoredRuleSet.sourceFilename}
-                {" "}are ready. Upload a new file to apply them.
+                {restoredRuleSet.selectedRules.length} rules from {restoredRuleSet.sourceFilename}{" "}
+                are ready. Upload a new file to apply them.
               </p>
             </div>
             <button type="button" onClick={clearRestoredRuleSet}>
@@ -1344,6 +1505,8 @@ function App() {
                   detectedIssueCodes.has(issueCode),
                 );
                 const isRestored = restoredRuleCodes.has(rule.code);
+                const isTemplateRule =
+                  isRestored && restoredRuleSet?.sourceType === "template";
                 return (
                   <label className="rule-card" key={rule.code}>
                     <input
@@ -1354,7 +1517,7 @@ function App() {
                     <span>
                       <strong>{rule.label}</strong>
                       {isRecommended && <em>Recommended</em>}
-                      {isRestored && <em>Restored</em>}
+                      {isTemplateRule ? <em>Template</em> : isRestored && <em>Restored</em>}
                     </span>
                     <p>{rule.description}</p>
                   </label>
@@ -1898,6 +2061,137 @@ function App() {
                     Saved history is local only. Cloud sync, authentication, and saved source files
                     are not implemented.
                   </p>
+                </article>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="templates-workspace" aria-labelledby="templates-title">
+        <div className="section-heading">
+          <p className="eyebrow">Templates</p>
+          <h2 id="templates-title">Named workflow templates</h2>
+        </div>
+
+        <div className="history-result">
+          <div className="history-header">
+            <div>
+              <span className="status-label">Rules only</span>
+              <h3>Reusable cleaning rule sets</h3>
+              <p>
+                Templates store reusable cleaning rules and metadata only. Original files are not
+                stored, and a new upload is required before processing or export.
+              </p>
+            </div>
+            <button
+              className="secondary-action"
+              type="button"
+              disabled={isLoadingTemplates}
+              onClick={handleLoadTemplates}
+            >
+              {isLoadingTemplates ? "Loading templates..." : "Load Templates"}
+            </button>
+          </div>
+
+          {templatesSuccessMessage && (
+            <p className="export-status success">{templatesSuccessMessage}</p>
+          )}
+          {templatesErrorMessage && (
+            <p className="export-status error">{templatesErrorMessage}</p>
+          )}
+
+          {templates.length === 0 ? (
+            <div className="history-empty">
+              <h3>Create a workflow template to reuse cleaning rules.</h3>
+              <p>Templates are local SQLite records. They do not store source data.</p>
+            </div>
+          ) : (
+            <div className="history-grid">
+              <div className="table-scroll" role="region" aria-label="Workflow templates table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Description</th>
+                      <th>Rules</th>
+                      <th>Source</th>
+                      <th>Updated</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {templates.map((template) => (
+                      <tr key={template.id}>
+                        <td>{template.name}</td>
+                        <td>{template.description ?? "-"}</td>
+                        <td>{template.selected_rules_count}</td>
+                        <td>{template.source_filename ?? "-"}</td>
+                        <td>{formatDateTime(template.updated_at)}</td>
+                        <td>
+                          <div className="history-actions">
+                            <button type="button" onClick={() => handleApplyTemplate(template.id)}>
+                              Apply Template
+                            </button>
+                            <button type="button" onClick={() => handleOpenTemplateDetail(template.id)}>
+                              View/Edit
+                            </button>
+                            <button
+                              type="button"
+                              disabled={isDeletingTemplateId === template.id}
+                              onClick={() => handleDeleteTemplate(template.id)}
+                            >
+                              {isDeletingTemplateId === template.id ? "Deleting..." : "Delete"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {selectedTemplate && (
+                <article className="session-detail" aria-label="Workflow template detail">
+                  <h3>{selectedTemplate.name}</h3>
+                  <p>{selectedTemplate.storage_note}</p>
+                  <form className="template-form-panel" onSubmit={handleSaveTemplateEdit}>
+                    <label>
+                      Template name
+                      <input
+                        value={editTemplateName}
+                        onChange={(event) => setEditTemplateName(event.target.value)}
+                        required
+                      />
+                    </label>
+                    <label>
+                      Description
+                      <textarea
+                        value={editTemplateDescription}
+                        onChange={(event) => setEditTemplateDescription(event.target.value)}
+                      />
+                    </label>
+                    <div className="template-rule-list" aria-label="Template rule editor">
+                      {cleaningRules.map((rule) => (
+                        <label key={rule.code}>
+                          <input
+                            type="checkbox"
+                            checked={editTemplateRules.includes(rule.code)}
+                            onChange={() => handleTemplateRuleToggle(rule.code)}
+                          />
+                          <span>{rule.label}</span>
+                        </label>
+                      ))}
+                    </div>
+                    <button
+                      className="secondary-action"
+                      type="submit"
+                      disabled={isSavingTemplateEdit}
+                    >
+                      {isSavingTemplateEdit ? "Saving changes..." : "Save Template Changes"}
+                    </button>
+                  </form>
+                  <p className="future-note">{selectedTemplate.new_upload_required_note}</p>
                 </article>
               )}
             </div>
