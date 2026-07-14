@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS workflow_templates (
 
 CREATE INDEX IF NOT EXISTS idx_workflow_templates_created_at
 ON workflow_templates(created_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_workflow_templates_updated_at
+ON workflow_templates(updated_at DESC);
 """
 
 
@@ -79,7 +82,7 @@ class WorkflowTemplateRepository:
             rows = connection.execute(
                 """
                 SELECT * FROM workflow_templates
-                ORDER BY created_at DESC, id DESC
+                ORDER BY updated_at DESC, id DESC
                 """
             ).fetchall()
         summaries = [_row_to_summary(row) for row in rows]

@@ -4,6 +4,7 @@ import pytest
 
 from datapulse_api.models import WorkflowTemplateCreate, WorkflowTemplateUpdate
 from datapulse_api.services.session_repository import CleaningSessionRepository
+from datapulse_api.services import template_repository as template_repository_module
 from datapulse_api.services.template_repository import (
     WorkflowTemplateNotFoundError,
     WorkflowTemplateRepository,
@@ -71,6 +72,29 @@ def test_template_repository_orders_newest_templates_first(tmp_path: Path) -> No
     listed = repository.list()
 
     assert [template.id for template in listed.templates] == [second.id, first.id]
+
+
+def test_template_repository_orders_recently_updated_templates_first(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    timestamps = iter(
+        [
+            "2026-07-15T00:00:00+00:00",
+            "2026-07-15T00:00:01+00:00",
+            "2026-07-15T00:00:02+00:00",
+        ]
+    )
+    monkeypatch.setattr(template_repository_module, "_utc_iso", lambda: next(timestamps))
+    repository = WorkflowTemplateRepository(tmp_path / "templates.sqlite3")
+
+    first = repository.create(make_template_payload("First"))
+    second = repository.create(make_template_payload("Second"))
+    repository.update(first.id, WorkflowTemplateUpdate(description="Freshly edited"))
+
+    listed = repository.list()
+
+    assert [template.id for template in listed.templates] == [first.id, second.id]
 
 
 def test_template_repository_delete_missing_template_raises_not_found(tmp_path: Path) -> None:
