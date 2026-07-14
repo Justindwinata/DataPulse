@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0011 adds saved rule set restore while keeping uploaded source-file storage, saved-session reprocessing, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0012 adds named saved workflow templates while keeping uploaded source-file storage, raw source data storage, template-based reprocessing without a fresh upload, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
 
 ## Repository Layout
 
@@ -43,6 +43,12 @@ The backend exposes API routes through FastAPI. Current endpoints:
 - `GET /sessions/{session_id}/report.html`
 - `GET /sessions/{session_id}/rules`
 - `DELETE /sessions/{session_id}`
+- `POST /templates`
+- `GET /templates`
+- `POST /templates/from-session/{session_id}`
+- `GET /templates/{template_id}`
+- `PATCH /templates/{template_id}`
+- `DELETE /templates/{template_id}`
 
 Domain contracts live under `datapulse_api.models`. File validation logic lives in `datapulse_api.services.file_validation`, keeping route handlers thin. The upload validation endpoint reads uploaded bytes to determine file size, returns structured validation metadata, and does not store files permanently.
 
@@ -63,6 +69,8 @@ Saved cleaning session persistence lives in `datapulse_api.services.session_repo
 Saved session report composition lives in `datapulse_api.services.saved_session_report`. It converts `SavedCleaningSessionDetail` metadata into a report document without requiring file re-upload or attempting full data reprocessing. Saved report rendering reuses `datapulse_api.services.report_html` styling and escaping utilities while clearly marking reports as metadata-based.
 
 Saved rule set restore uses the selected rule codes stored in saved cleaning session metadata. The `GET /sessions/{session_id}/rules` endpoint returns rule codes and explicit notes that original files are not stored and a new upload is required before applying restored rules.
+
+Workflow template persistence lives in `datapulse_api.services.template_repository`. Templates are local SQLite records stored in the same app database as saved sessions. They store a name, optional description, selected rule codes, optional source session/file context, and timestamps. Templates do not store original uploaded files, raw source rows, cleaned CSV content, or data needed to reprocess a file without a fresh upload.
 
 Current upload validation rules:
 
@@ -144,6 +152,18 @@ Current saved history rules:
 - A fresh upload is required before restored rules can be applied to data
 - Tests use temporary database paths instead of the local app database
 
+Current workflow template rules:
+
+- Persistence is local SQLite only
+- Templates store rule sets and metadata only
+- Required fields are template name and at least one supported cleaning rule
+- Optional fields include description, source session ID, and source filename context
+- API supports create, list, detail, update, delete, and create-from-session operations
+- Create-from-session copies selected rule codes from saved session metadata without storing original files
+- Applying a template only preselects rules in the frontend workflow
+- A fresh upload is required before template rules can be used for validation, structure detection, quality analysis, cleaning preview, export, or live reports
+- Tests use temporary database paths instead of the local app database
+
 Current saved report replay rules:
 
 - Output format is standalone HTML
@@ -155,7 +175,7 @@ Current saved report replay rules:
 
 ## Frontend
 
-The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, restored rule banners, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, saved session creation, and scroll-safe preview tables. The History section lists saved sessions, displays metadata-first detail, shows optional saved preview snapshots, supports saved HTML report replay, supports saved rule set restore, and supports local delete actions.
+The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, restored/template rule banners, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, saved session creation, template creation from current rules, and scroll-safe preview tables. The History section lists saved sessions, displays metadata-first detail, shows optional saved preview snapshots, supports saved HTML report replay, supports saved rule set restore, supports template creation from saved session rules, and supports local delete actions. The Templates section lists named templates, supports detail/edit, applies template rules to the current workflow, and deletes local template records.
 
 ## Future Processing Flow
 
@@ -171,6 +191,7 @@ The frontend is a Vite React application written in TypeScript. The upload works
 10. Persist metadata-first session history in SQLite.
 11. Replay saved HTML reports from stored metadata.
 12. Reuse saved rule sets on a newly uploaded file.
+13. Save, manage, and apply named workflow templates to future uploads.
 
 ## Architectural Boundaries
 
@@ -184,11 +205,13 @@ The frontend is a Vite React application written in TypeScript. The upload works
 - No AI or LLM cleaning
 - No authentication in early versions
 - No cloud database
-- No deployment in DP-0011
+- No deployment in DP-0012
 - No OCR, PDF support, or image processing
 - No Excel formatting preservation
 - No permanent upload storage
 - No original uploaded file storage in saved history
+- No original uploaded file storage in workflow templates
+- No raw source data storage in workflow templates
 - No cloud sync
 - No PDF export
 - No XLSX export

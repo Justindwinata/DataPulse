@@ -92,9 +92,18 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Allow users to edit or clear restored rules.
 - Status: implemented.
 
+## DP-0012 - Named Saved Workflow Templates
+
+- Save reusable cleaning rule sets as named templates.
+- Create templates from the current workflow or from saved session rules.
+- Store template metadata locally in SQLite without original files or raw data.
+- List, view, edit, apply, and delete workflow templates.
+- Preselect template rules on a newly uploaded and profiled file.
+- Status: implemented.
+
 ## Later Ideas
 
-- Saved workflow templates with user-defined names.
+- Template search, filtering, and import/export as portable JSON.
 - Better type profiling for numeric and date columns.
 - Safer large-file limits and streaming previews.
 - PDF or richer report export options, if needed after the HTML report is stable.

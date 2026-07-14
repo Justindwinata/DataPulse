@@ -88,7 +88,7 @@ const productSections: ProductSection[] = [
   },
   {
     title: "Cleaning Reports",
-    description: "Open HTML reports and reuse saved rule sets on new uploads.",
+    description: "Open HTML reports, review history, and apply named templates on new uploads.",
   },
 ];
 
@@ -995,13 +995,13 @@ function App() {
           <p className="description">
             Upload a CSV-like or Excel file, validate it, detect structure,
             analyze quality issues, apply deterministic cleaning rules, export CSV,
-            open standalone HTML reports, and reuse saved rule sets on new uploads.
+            open standalone HTML reports, and apply named workflow templates to new uploads.
           </p>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0011</span>
-          <strong>Saved rule restore active</strong>
-          <p>Saved cleaning sessions can restore rule sets, but new uploads are required for processing.</p>
+          <span className="status-label">DP-0012</span>
+          <strong>Workflow templates active</strong>
+          <p>Named templates store reusable cleaning rules only. New uploads are required for processing.</p>
         </div>
       </section>
 

@@ -103,3 +103,11 @@ DP-0011 restores only selected cleaning rule codes from saved sessions. Users mu
 ## 2026-07-15 - Current File Recommendations Still Win Context
 
 Restored rules are preselected alongside recommendations from the newly uploaded file. Recommendation badges continue to come from current-file issue detection so DataPulse does not imply that old quality findings apply to new data.
+
+## 2026-07-15 - Templates Store Rule Sets Only
+
+DP-0012 workflow templates store reusable cleaning rule codes, names, descriptions, optional source context, and timestamps. They do not store original uploaded files, raw source data, cleaned CSV content, or anything that can reprocess data without a fresh upload.
+
+## 2026-07-15 - Template Application Reuses Restore State
+
+Applying a template uses the same frontend preselection boundary as saved rule restore. Template rules can help users start faster, but the current uploaded file still drives validation, structure detection, quality recommendations, cleaning preview, export, and report generation.

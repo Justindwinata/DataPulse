@@ -141,6 +141,21 @@ DP-0011 adds saved rule set restore:
 
 Saved sessions restore only rule sets and helpful context. A fresh upload is required for validation, structure detection, quality analysis, cleaning preview, export, and live reports.
 
+DP-0012 adds named saved workflow templates:
+
+- SQLite-backed workflow templates stored alongside local saved session metadata
+- `POST /templates`, `GET /templates`, `GET /templates/{template_id}`, `PATCH /templates/{template_id}`, and `DELETE /templates/{template_id}` endpoints
+- `POST /templates/from-session/{session_id}` endpoint for creating templates from saved session rule sets
+- Template records with name, optional description, selected cleaning rules, optional source context, and timestamps
+- Frontend Save Rule Set as Template action from the current workflow
+- Frontend Save Rules as Template action from saved session detail
+- Templates section with list, empty state, detail/edit form, rule editor, apply action, and delete action
+- Applied template banner in the main workflow
+- Template rules are preselected after a new file is uploaded, structured, and profiled
+- Users can edit or clear applied template rules without deleting the template
+
+Templates store only reusable cleaning rules and metadata. They do not store original uploaded files, raw source data, cleaned CSV files, or anything that can reprocess data without a fresh upload.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -155,6 +170,7 @@ Saved sessions restore only rule sets and helpful context. A fresh upload is req
 10. Review saved cleaning history.
 11. Open saved HTML reports from local history.
 12. Reuse saved cleaning rule sets on a newly uploaded file.
+13. Save and apply named workflow templates on future uploads.
 
 ## Current Limitations
 
@@ -168,9 +184,12 @@ Saved sessions restore only rule sets and helpful context. A fresh upload is req
 - Local SQLite saved cleaning history exists
 - Saved-session HTML report replay exists
 - Saved rule set restore exists
+- Named workflow templates exist
 - Original uploaded files are not stored in history
 - Saved reports cannot reprocess original files
 - Saved rule sets require a fresh upload before real processing/export
+- Templates store rule sets and metadata only
+- Templates require a fresh upload before processing/export
 - No cloud sync
 - No PDF export
 - No XLSX export
@@ -186,7 +205,7 @@ Excel support focuses on table-like sheets. DataPulse does not preserve workbook
 - Backend: Python, FastAPI, Pydantic, Pytest
 - Frontend: React, TypeScript, Vite, Vitest
 - Planned data processing: pandas, openpyxl for `.xlsx`, xlrd for `.xls`, Python csv module
-- Persistence: local SQLite for saved cleaning session metadata
+- Persistence: local SQLite for saved cleaning session metadata and workflow templates
 
 ## Local Setup
 
@@ -354,5 +373,18 @@ GET /sessions/{session_id}/rules
 ```
 
 The saved rule set endpoint returns selected cleaning rules and metadata-only notes. It does not return uploaded file content and states that a new upload is required before applying restored rules.
+
+Workflow templates:
+
+```http
+POST /templates
+GET /templates
+GET /templates/{template_id}
+PATCH /templates/{template_id}
+DELETE /templates/{template_id}
+POST /templates/from-session/{session_id}
+```
+
+The templates API stores named reusable rule sets in local SQLite. Templates include a name, optional description, selected cleaning rules, optional source context, and timestamps. They do not store original files or raw data, and applying a template still requires a fresh upload before cleaning, export, or report generation.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules while preserving honest implementation-status metadata.

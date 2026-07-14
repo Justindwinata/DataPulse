@@ -2,6 +2,24 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.12.0 - DP-0012 Named Saved Workflow Templates
+
+### Added
+
+- Added backend workflow template contracts for create, update, summary, detail, and list responses.
+- Added SQLite `workflow_templates` persistence with create, list, get, update, and delete repository methods.
+- Added `POST /templates`, `GET /templates`, `GET /templates/{template_id}`, `PATCH /templates/{template_id}`, and `DELETE /templates/{template_id}` endpoints.
+- Added `POST /templates/from-session/{session_id}` for creating a named template from saved session rules.
+- Added frontend workflow template client.
+- Added Save Rule Set as Template workflow from the current cleaning rule selection.
+- Added Save Rules as Template workflow from saved session detail.
+- Added Templates section with empty state, list, detail/edit UI, rule editor, apply action, and delete action.
+- Added applied-template banner and template rule preselection after new-file quality analysis.
+
+### Not Included
+
+- Original uploaded file storage, raw source data storage, cleaned CSV storage in templates, template-based reprocessing without a fresh upload, cloud sync, authentication, deployment, PDF export, XLSX export, risky type conversions, AI/LLM cleaning, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.11.0 - DP-0011 Saved Rule Set Restore Workflow
 
 ### Added

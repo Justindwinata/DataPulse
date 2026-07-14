@@ -67,6 +67,7 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0009: local SQLite saved cleaning session history, metadata-first session detail, and frontend History workflow.
 - DP-0010: saved-session HTML report replay from local history without original file re-upload.
 - DP-0011: saved rule set restore for applying prior rule selections to a newly uploaded file.
+- DP-0012: named workflow templates for saving, editing, applying, and deleting reusable cleaning rule sets.
 
 ## Cleaning Model
 
@@ -87,3 +88,5 @@ DP-0009 stores saved cleaning session metadata in local SQLite. History records 
 DP-0010 generates saved-session HTML reports from stored metadata. Reports are useful for reviewing prior cleaning decisions without re-uploading the original file. They cannot reprocess the original file, regenerate full cleaned CSV output from history, or claim that the saved snapshot represents the full source dataset.
 
 DP-0011 restores selected cleaning rule codes from saved sessions. Restored rules are preselected only after a new file is uploaded, structured, and profiled. Users can edit or clear restored rules. Saved sessions do not restore files, reprocess saved data, regenerate cleaned CSV, or create full live reports from old uploads.
+
+DP-0012 stores named workflow templates in local SQLite. Templates include a name, optional description, selected cleaning rules, optional source context, and timestamps. Users can create templates from the current workflow or saved session rules, edit template metadata and rules, delete templates, and apply a template to preselect rules for a newly uploaded file. Templates do not store original uploaded files, raw source data, cleaned CSV files, or anything that can process/export data without a fresh upload.
