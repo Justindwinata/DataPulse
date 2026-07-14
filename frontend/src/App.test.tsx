@@ -25,6 +25,11 @@ import {
   listSessions,
 } from "./api/savedSessions";
 import { validateUploadFile, type FileUploadValidationResponse } from "./api/uploadValidation";
+import {
+  createTemplate,
+  createTemplateFromSession,
+  type WorkflowTemplateDetail,
+} from "./api/workflowTemplates";
 
 vi.mock("./api/uploadValidation", async (importOriginal) => {
   const actual = await importOriginal<typeof import("./api/uploadValidation")>();
@@ -84,6 +89,15 @@ vi.mock("./api/savedSessions", async (importOriginal) => {
     getSavedSessionRules: vi.fn(),
     getSession: vi.fn(),
     listSessions: vi.fn(),
+  };
+});
+
+vi.mock("./api/workflowTemplates", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./api/workflowTemplates")>();
+  return {
+    ...actual,
+    createTemplate: vi.fn(),
+    createTemplateFromSession: vi.fn(),
   };
 });
 
@@ -388,6 +402,20 @@ const savedSessionDetail = {
   storage_note: "Original uploaded files are not stored.",
 };
 
+const workflowTemplateDetail: WorkflowTemplateDetail = {
+  id: 11,
+  name: "Sales cleanup",
+  description: "Reusable rules",
+  selected_rules_count: 2,
+  selected_rules: ["trim_whitespace", "remove_empty_rows"],
+  source_session_id: null,
+  source_filename: "messy.csv",
+  created_at: "2026-07-15T00:00:00Z",
+  updated_at: "2026-07-15T00:00:00Z",
+  storage_note: "Templates store cleaning rules and metadata only.",
+  new_upload_required_note: "Upload a new file before applying this template.",
+};
+
 describe("App", () => {
   beforeEach(() => {
     vi.mocked(validateUploadFile).mockReset();
@@ -402,6 +430,8 @@ describe("App", () => {
     vi.mocked(getSavedSessionRules).mockReset();
     vi.mocked(getSession).mockReset();
     vi.mocked(listSessions).mockReset();
+    vi.mocked(createTemplate).mockReset();
+    vi.mocked(createTemplateFromSession).mockReset();
     vi.stubGlobal("confirm", vi.fn(() => true));
   });
 
@@ -673,6 +703,52 @@ describe("App", () => {
     expect(createObjectUrl).toHaveBeenCalled();
     expect(clickSpy).toHaveBeenCalled();
     expect(revokeObjectUrl).toHaveBeenCalledWith("blob:datapulse-cleaned");
+  });
+
+  it("creates a workflow template from current selected rules", async () => {
+    vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
+    vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);
+    vi.mocked(detectDataQuality).mockResolvedValue(qualityResponse);
+    vi.mocked(createTemplate).mockResolvedValue(workflowTemplateDetail);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Detect Structure" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Detect Structure" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Analyze Data Quality" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Analyze Data Quality" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Save Rule Set as Template" })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("Sales export cleanup"), {
+      target: { value: "Sales cleanup" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Optional note about when to use this rule set"), {
+      target: { value: "Reusable rules" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Rule Set as Template" }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Saved template "Sales cleanup".')).toBeInTheDocument();
+    });
+    expect(vi.mocked(createTemplate)).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "Sales cleanup",
+        description: "Reusable rules",
+        source_filename: "messy.csv",
+      }),
+    );
+    expect(screen.getByText(/Templates store reusable cleaning rules only/)).toBeInTheDocument();
   });
 
   it("saves current cleaning session metadata after cleaned preview", async () => {
@@ -1021,6 +1097,45 @@ describe("App", () => {
     expect(vi.mocked(getSavedSessionRules)).toHaveBeenCalledWith(7);
     expect(vi.mocked(deleteSession)).not.toHaveBeenCalled();
     expect(scrollIntoView).toHaveBeenCalled();
+  });
+
+  it("creates a workflow template from saved session rules", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(createTemplateFromSession).mockResolvedValue({
+      ...workflowTemplateDetail,
+      source_session_id: 7,
+    });
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "View Detail" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Save Rules as Template" })).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByPlaceholderText("messy.csv rules"), {
+      target: { value: "Saved session cleanup" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Optional note for this template"), {
+      target: { value: "Use for similar exports" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save Rules as Template" }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Saved template "Sales cleanup" from saved session rules.')).toBeInTheDocument();
+    });
+    expect(vi.mocked(createTemplateFromSession)).toHaveBeenCalledWith(
+      7,
+      expect.objectContaining({
+        name: "Saved session cleanup",
+        description: "Use for similar exports",
+      }),
+    );
+    expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
   });
 
   it("preselects restored rules after quality analysis and allows editing", async () => {

@@ -43,6 +43,11 @@ import {
   type SavedCleaningSessionSummary,
   type SavedCleaningSessionCreate,
 } from "./api/savedSessions";
+import {
+  WorkflowTemplatesError,
+  createTemplate,
+  createTemplateFromSession,
+} from "./api/workflowTemplates";
 
 type ProductSection = {
   title: string;
@@ -238,6 +243,8 @@ function App() {
   const [historyErrorMessage, setHistoryErrorMessage] = useState<string | null>(null);
   const [historySuccessMessage, setHistorySuccessMessage] = useState<string | null>(null);
   const [reuseRulesErrorMessage, setReuseRulesErrorMessage] = useState<string | null>(null);
+  const [templateErrorMessage, setTemplateErrorMessage] = useState<string | null>(null);
+  const [templateSuccessMessage, setTemplateSuccessMessage] = useState<string | null>(null);
   const [savedReportErrorMessage, setSavedReportErrorMessage] = useState<string | null>(null);
   const [savedReportSuccessMessage, setSavedReportSuccessMessage] = useState<string | null>(null);
   const [savedSessions, setSavedSessions] = useState<SavedCleaningSessionSummary[]>([]);
@@ -255,6 +262,12 @@ function App() {
   const [isDeletingSessionId, setIsDeletingSessionId] = useState<number | null>(null);
   const [isGeneratingSavedReport, setIsGeneratingSavedReport] = useState(false);
   const [isRestoringRules, setIsRestoringRules] = useState(false);
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [isCreatingSessionTemplate, setIsCreatingSessionTemplate] = useState(false);
+  const [templateName, setTemplateName] = useState("");
+  const [templateDescription, setTemplateDescription] = useState("");
+  const [sessionTemplateName, setSessionTemplateName] = useState("");
+  const [sessionTemplateDescription, setSessionTemplateDescription] = useState("");
 
   const clearReportStatus = () => {
     setReportErrorMessage(null);
@@ -264,6 +277,11 @@ function App() {
   const clearSaveSessionStatus = () => {
     setSaveSessionErrorMessage(null);
     setSaveSessionSuccessMessage(null);
+  };
+
+  const clearTemplateStatus = () => {
+    setTemplateErrorMessage(null);
+    setTemplateSuccessMessage(null);
   };
 
   const clearRestoredRuleSet = () => {
@@ -292,6 +310,7 @@ function App() {
     setExportSuccessMessage(null);
     clearReportStatus();
     clearSaveSessionStatus();
+    clearTemplateStatus();
   };
 
   const handleValidate = async (event: FormEvent<HTMLFormElement>) => {
@@ -313,6 +332,7 @@ function App() {
     setExportSuccessMessage(null);
     clearReportStatus();
     clearSaveSessionStatus();
+    clearTemplateStatus();
     setSelectedSheetName("");
 
     try {
@@ -346,6 +366,7 @@ function App() {
     setExportSuccessMessage(null);
     clearReportStatus();
     clearSaveSessionStatus();
+    clearTemplateStatus();
 
     try {
       const result = await detectFileStructure(selectedFile);
@@ -381,6 +402,7 @@ function App() {
     setExportSuccessMessage(null);
     clearReportStatus();
     clearSaveSessionStatus();
+    clearTemplateStatus();
 
     try {
       setStructureResult(await detectFileStructure(selectedFile, selectedSheetName));
@@ -415,6 +437,7 @@ function App() {
     setExportSuccessMessage(null);
     clearReportStatus();
     clearSaveSessionStatus();
+    clearTemplateStatus();
 
     try {
       const result = await detectDataQuality(selectedFile, sheetName || undefined);
@@ -453,6 +476,38 @@ function App() {
     setExportSuccessMessage(null);
     clearReportStatus();
     clearSaveSessionStatus();
+    clearTemplateStatus();
+  };
+
+  const handleCreateTemplateFromCurrentRules = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (selectedRules.length === 0) {
+      setTemplateErrorMessage("Select at least one cleaning rule before saving a template.");
+      return;
+    }
+    setIsCreatingTemplate(true);
+    setTemplateErrorMessage(null);
+    setTemplateSuccessMessage(null);
+
+    try {
+      const created = await createTemplate({
+        name: templateName,
+        description: templateDescription || null,
+        selected_rules: selectedRules,
+        source_filename: validationResult?.safe_filename ?? null,
+      });
+      setTemplateSuccessMessage(`Saved template "${created.name}".`);
+      setTemplateName("");
+      setTemplateDescription("");
+    } catch (error) {
+      setTemplateErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Saving the workflow template failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsCreatingTemplate(false);
+    }
   };
 
   const handleGenerateCleaningPreview = async () => {
@@ -669,6 +724,37 @@ function App() {
       );
     } finally {
       setIsRestoringRules(false);
+    }
+  };
+
+  const handleCreateTemplateFromSavedSession = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedSavedSession) {
+      setReuseRulesErrorMessage("Open a saved session detail before saving rules as a template.");
+      return;
+    }
+
+    setIsCreatingSessionTemplate(true);
+    setReuseRulesErrorMessage(null);
+    setHistorySuccessMessage(null);
+
+    try {
+      const created = await createTemplateFromSession(selectedSavedSession.id, {
+        name: sessionTemplateName || `${selectedSavedSession.source_filename} rules`,
+        description: sessionTemplateDescription || null,
+        selected_rules: selectedSavedSession.selected_rules as CleaningRuleCode[],
+      });
+      setHistorySuccessMessage(`Saved template "${created.name}" from saved session rules.`);
+      setSessionTemplateName("");
+      setSessionTemplateDescription("");
+    } catch (error) {
+      setReuseRulesErrorMessage(
+        error instanceof WorkflowTemplatesError
+          ? error.message
+          : "Saving saved-session rules as a template failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsCreatingSessionTemplate(false);
     }
   };
 
@@ -1287,6 +1373,47 @@ function App() {
                 : "Generate Cleaned Preview"}
             </button>
 
+            <form
+              className="template-form-panel"
+              aria-label="Save current rules as template"
+              onSubmit={handleCreateTemplateFromCurrentRules}
+            >
+              <div>
+                <span className="status-label">Template</span>
+                <h3>Save Rule Set as Template</h3>
+                <p>
+                  Templates store reusable cleaning rules only. Original files are not stored,
+                  and a fresh upload is required to apply a template.
+                </p>
+              </div>
+              <label>
+                Template name
+                <input
+                  value={templateName}
+                  onChange={(event) => setTemplateName(event.target.value)}
+                  placeholder="Sales export cleanup"
+                  required
+                />
+              </label>
+              <label>
+                Description
+                <textarea
+                  value={templateDescription}
+                  onChange={(event) => setTemplateDescription(event.target.value)}
+                  placeholder="Optional note about when to use this rule set"
+                />
+              </label>
+              <button className="secondary-action" type="submit" disabled={isCreatingTemplate}>
+                {isCreatingTemplate ? "Saving template..." : "Save Rule Set as Template"}
+              </button>
+              {templateSuccessMessage && (
+                <p className="export-status success">{templateSuccessMessage}</p>
+              )}
+              {templateErrorMessage && (
+                <p className="export-status error">{templateErrorMessage}</p>
+              )}
+            </form>
+
             {cleaningErrorMessage && (
               <div className="result-card rejected compact-result">
                 <span className="status-label">Error</span>
@@ -1702,6 +1829,43 @@ function App() {
                       <p className="export-status error">{reuseRulesErrorMessage}</p>
                     )}
                   </div>
+                  <form
+                    className="template-form-panel"
+                    aria-label="Save saved session rules as template"
+                    onSubmit={handleCreateTemplateFromSavedSession}
+                  >
+                    <div>
+                      <span className="status-label">Template</span>
+                      <h3>Save Rules as Template</h3>
+                      <p>
+                        Save this session's selected rules as a reusable template.
+                        Original uploaded files are not stored.
+                      </p>
+                    </div>
+                    <label>
+                      Template name
+                      <input
+                        value={sessionTemplateName}
+                        onChange={(event) => setSessionTemplateName(event.target.value)}
+                        placeholder={`${selectedSavedSession.source_filename} rules`}
+                      />
+                    </label>
+                    <label>
+                      Description
+                      <textarea
+                        value={sessionTemplateDescription}
+                        onChange={(event) => setSessionTemplateDescription(event.target.value)}
+                        placeholder="Optional note for this template"
+                      />
+                    </label>
+                    <button
+                      className="secondary-action"
+                      type="submit"
+                      disabled={isCreatingSessionTemplate}
+                    >
+                      {isCreatingSessionTemplate ? "Saving template..." : "Save Rules as Template"}
+                    </button>
+                  </form>
                   <div className="saved-report-panel" aria-label="Saved report replay panel">
                     <div>
                       <span className="status-label">HTML</span>

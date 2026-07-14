@@ -459,7 +459,8 @@ dd {
 .report-panel,
 .save-session-panel,
 .saved-report-panel,
-.reuse-rules-panel {
+.reuse-rules-panel,
+.template-form-panel {
   display: grid;
   gap: 14px;
   margin-top: 18px;
@@ -471,7 +472,8 @@ dd {
 .report-panel h3,
 .save-session-panel h3,
 .saved-report-panel h3,
-.reuse-rules-panel h3 {
+.reuse-rules-panel h3,
+.template-form-panel h3 {
   margin-bottom: 8px;
   color: #102027;
 }
@@ -480,10 +482,38 @@ dd {
 .report-panel p,
 .save-session-panel p,
 .saved-report-panel p,
-.reuse-rules-panel p {
+.reuse-rules-panel p,
+.template-form-panel p {
   margin-bottom: 8px;
   color: #52636b;
   line-height: 1.55;
+}
+
+.template-form-panel label {
+  display: grid;
+  gap: 8px;
+  color: #697a82;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.template-form-panel input,
+.template-form-panel textarea {
+  width: 100%;
+  border: 1px solid #c4d1d6;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #172026;
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 10px 12px;
+  text-transform: none;
+}
+
+.template-form-panel textarea {
+  min-height: 86px;
+  resize: vertical;
 }
 
 .export-status {
