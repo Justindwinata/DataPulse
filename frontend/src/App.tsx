@@ -1363,7 +1363,7 @@ function App() {
                   <h3>Raw preview</h3>
                   <p>Preview rows are bounded and normalized for display only.</p>
                 </div>
-                <div className="table-scroll" role="region" aria-label="Raw preview table">
+                <div className="table-scroll" role="region" aria-label="Raw preview table" tabIndex={0}>
                   <table>
                     <thead>
                       <tr>
@@ -1519,7 +1519,7 @@ function App() {
                 <h3>Column profile</h3>
                 <p>Types and counts are inferred from the bounded sample.</p>
               </div>
-              <div className="table-scroll" role="region" aria-label="Column profile table">
+              <div className="table-scroll" role="region" aria-label="Column profile table" tabIndex={0}>
                 <table>
                   <thead>
                     <tr>
@@ -1749,7 +1749,7 @@ function App() {
                     <h3>Cleaned preview</h3>
                     <p>Preview rows are sample-based and capped at 20.</p>
                   </div>
-                  <div className="table-scroll" role="region" aria-label="Cleaned preview table">
+                  <div className="table-scroll" role="region" aria-label="Cleaned preview table" tabIndex={0}>
                     <table>
                       <thead>
                         <tr>
@@ -1918,7 +1918,7 @@ function App() {
             </div>
           ) : (
             <div className="history-grid">
-              <div className="table-scroll" role="region" aria-label="Saved sessions table">
+              <div className="table-scroll" role="region" aria-label="Saved sessions table" tabIndex={0}>
                 <table>
                   <thead>
                     <tr>
@@ -2024,7 +2024,7 @@ function App() {
                         <h3>Saved cleaned preview snapshot</h3>
                         <p>Snapshot is stored as metadata, not the original file.</p>
                       </div>
-                      <div className="table-scroll" role="region" aria-label="Saved preview table">
+                      <div className="table-scroll" role="region" aria-label="Saved preview table" tabIndex={0}>
                         <table>
                           <thead>
                             <tr>
@@ -2190,7 +2190,7 @@ function App() {
             </div>
           ) : (
             <div className="history-grid">
-              <div className="table-scroll" role="region" aria-label="Workflow templates table">
+              <div className="table-scroll" role="region" aria-label="Workflow templates table" tabIndex={0}>
                 <table>
                   <thead>
                     <tr>

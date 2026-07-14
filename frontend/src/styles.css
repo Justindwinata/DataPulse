@@ -19,6 +19,10 @@ body {
   margin: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 .app-shell {
   min-height: 100vh;
   background:
@@ -281,6 +285,21 @@ dd {
   font: inherit;
   font-weight: 800;
   cursor: pointer;
+}
+
+.primary-action:focus-visible,
+.secondary-action:focus-visible,
+.history-actions button:focus-visible,
+.restore-banner button:focus-visible,
+.drop-zone:focus-within,
+.rule-card:focus-within,
+.template-rule-list label:focus-within,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.table-scroll:focus-visible {
+  outline: 3px solid rgba(176, 88, 38, 0.38);
+  outline-offset: 3px;
 }
 
 .primary-action:disabled {
@@ -892,6 +911,10 @@ dd {
   background: #ffffff;
 }
 
+.table-scroll:focus-visible {
+  border-color: #b05826;
+}
+
 table {
   width: 100%;
   min-width: 620px;
@@ -1017,6 +1040,10 @@ h2 {
   .stage-strip {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .history-header {
+    align-items: start;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1054,6 +1081,11 @@ h2 {
     padding: 16px;
   }
 
+  .primary-action,
+  .secondary-action {
+    min-height: 46px;
+  }
+
   .selected-file dl,
   .result-metadata,
   .summary-grid,
@@ -1077,5 +1109,14 @@ h2 {
 
   .feature-card {
     min-height: auto;
+  }
+
+  .history-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .history-actions button {
+    width: 100%;
   }
 }
