@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import HTMLResponse
 
 from datapulse_api.models import (
+    SavedCleaningRuleSetResponse,
     SavedCleaningSessionCreate,
     SavedCleaningSessionDetail,
     SavedCleaningSessionListResponse,
@@ -48,6 +49,24 @@ async def get_saved_session_report(
     return HTMLResponse(
         content=render_saved_session_report_html(report),
         media_type="text/html; charset=utf-8",
+    )
+
+
+@router.get("/{session_id}/rules")
+async def get_saved_session_rules(
+    session_id: int,
+    repository: CleaningSessionRepository = Depends(get_session_repository),
+) -> SavedCleaningRuleSetResponse:
+    try:
+        session = repository.get(session_id)
+    except CleaningSessionNotFoundError as error:
+        raise HTTPException(status_code=404, detail="Saved cleaning session not found.") from error
+    return SavedCleaningRuleSetResponse(
+        session_id=session.id,
+        source_filename=session.source_filename,
+        selected_rules=session.selected_rules,
+        selected_rules_count=len(session.selected_rules),
+        created_at=session.created_at,
     )
 
 

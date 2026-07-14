@@ -64,5 +64,17 @@ class SavedCleaningSessionListResponse(BaseModel):
     total_count: NonNegativeInt = 0
 
 
+class SavedCleaningRuleSetResponse(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    session_id: int
+    source_filename: str
+    selected_rules: list[str]
+    selected_rules_count: NonNegativeInt
+    created_at: datetime
+    original_file_storage_note: str = "Original uploaded files are not stored by DataPulse."
+    new_upload_required_note: str = "Upload a new file before applying these restored cleaning rules."
+
+
 def utc_now() -> datetime:
     return datetime.now(UTC)

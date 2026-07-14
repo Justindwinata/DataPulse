@@ -114,6 +114,34 @@ def test_saved_session_report_missing_session_returns_404(tmp_path: Path) -> Non
     app.dependency_overrides.clear()
 
 
+def test_get_saved_session_rules_returns_metadata_only_notes(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
+    create_response = client.post("/sessions", json=session_payload())
+    session_id = create_response.json()["id"]
+
+    response = client.get(f"/sessions/{session_id}/rules")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["session_id"] == session_id
+    assert payload["source_filename"] == "messy.csv"
+    assert payload["selected_rules"] == ["trim_whitespace"]
+    assert payload["selected_rules_count"] == 1
+    assert "Original uploaded files are not stored" in payload["original_file_storage_note"]
+    assert "Upload a new file" in payload["new_upload_required_note"]
+    app.dependency_overrides.clear()
+
+
+def test_get_saved_session_rules_missing_session_returns_404(tmp_path: Path) -> None:
+    client = make_client(tmp_path)
+
+    response = client.get("/sessions/999/rules")
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Saved cleaning session not found."
+    app.dependency_overrides.clear()
+
+
 def test_create_session_rejects_invalid_payload(tmp_path: Path) -> None:
     client = make_client(tmp_path)
     payload = session_payload()

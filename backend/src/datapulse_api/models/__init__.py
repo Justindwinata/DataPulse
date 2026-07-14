@@ -53,6 +53,7 @@ from datapulse_api.models.sessions import (
     SavedCleaningSessionDetail,
     SavedCleaningSessionListResponse,
     SavedCleaningSessionSummary,
+    SavedCleaningRuleSetResponse,
 )
 from datapulse_api.models.structure_detection import (
     DelimiterConfidence,
@@ -112,6 +113,7 @@ __all__ = [
     "SavedCleaningSessionDetail",
     "SavedCleaningSessionListResponse",
     "SavedCleaningSessionSummary",
+    "SavedCleaningRuleSetResponse",
     "DelimiterConfidence",
     "DelimiterDetection",
     "ExcelSheetMetadata",
