@@ -60,6 +60,12 @@ type ProductSection = {
   description: string;
 };
 
+type WorkflowStage = {
+  step: string;
+  title: string;
+  description: string;
+};
+
 type RestoredRuleSet = {
   sessionId: number;
   sourceFilename: string;
@@ -89,6 +95,39 @@ const productSections: ProductSection[] = [
   {
     title: "Cleaning Reports",
     description: "Open HTML reports, review history, and apply named templates on new uploads.",
+  },
+];
+
+const workflowStages: WorkflowStage[] = [
+  {
+    step: "01",
+    title: "Upload",
+    description: "Choose CSV, TSV, TXT, XLSX, or XLS.",
+  },
+  {
+    step: "02",
+    title: "Validate",
+    description: "Check format, size, and filename safety.",
+  },
+  {
+    step: "03",
+    title: "Detect",
+    description: "Inspect delimiters, sheets, headers, and preview rows.",
+  },
+  {
+    step: "04",
+    title: "Profile",
+    description: "Review issues, quality score, and column summaries.",
+  },
+  {
+    step: "05",
+    title: "Clean",
+    description: "Select deterministic rules and compare before/after.",
+  },
+  {
+    step: "06",
+    title: "Export",
+    description: "Download CSV, open reports, save history, or apply templates.",
   },
 ];
 
@@ -987,6 +1026,12 @@ function App() {
 
   return (
     <main className="app-shell">
+      <nav className="app-nav" aria-label="DataPulse sections">
+        <a href="#upload-title">Workflow</a>
+        <a href="#history-title">History</a>
+        <a href="#templates-title">Templates</a>
+      </nav>
+
       <section className="hero" aria-labelledby="product-title">
         <div className="hero-copy">
           <p className="eyebrow">CSV and Excel cleaning reports</p>
@@ -1009,6 +1054,20 @@ function App() {
         <div className="section-heading">
           <p className="eyebrow">Detection workspace</p>
           <h2 id="upload-title">Validate a file and inspect its raw structure</h2>
+          <p>
+            Follow the local workflow from upload to export. Each step keeps data handling
+            explicit, deterministic, and reversible until you choose to download a cleaned CSV.
+          </p>
+        </div>
+
+        <div className="stage-strip" aria-label="Workflow stages">
+          {workflowStages.map((stage) => (
+            <article key={stage.step}>
+              <span>{stage.step}</span>
+              <strong>{stage.title}</strong>
+              <p>{stage.description}</p>
+            </article>
+          ))}
         </div>
 
         {restoredRuleSet && (
