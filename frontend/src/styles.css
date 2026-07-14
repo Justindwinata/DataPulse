@@ -506,6 +506,39 @@ dd {
   align-items: end;
 }
 
+.restore-banner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 18px;
+  border: 1px solid #b7d7d2;
+  border-radius: 8px;
+  background: #eef8f6;
+  padding: 16px;
+}
+
+.restore-banner h3 {
+  margin: 8px 0;
+  color: #102027;
+}
+
+.restore-banner p {
+  color: #52636b;
+  line-height: 1.55;
+}
+
+.restore-banner button {
+  min-height: 40px;
+  border: 1px solid #20746b;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #195d56;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
 .history-header h3,
 .history-empty h3,
 .session-detail h3 {
@@ -838,6 +871,10 @@ h2 {
   }
 
   .workspace-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .restore-banner {
     grid-template-columns: 1fr;
   }
 

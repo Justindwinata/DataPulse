@@ -48,6 +48,13 @@ type ProductSection = {
   description: string;
 };
 
+type RestoredRuleSet = {
+  sessionId: number;
+  sourceFilename: string;
+  selectedRules: CleaningRuleCode[];
+  createdAt: string;
+};
+
 const productSections: ProductSection[] = [
   {
     title: "Messy File Upload",
@@ -227,6 +234,7 @@ function App() {
   const [savedSessions, setSavedSessions] = useState<SavedCleaningSessionSummary[]>([]);
   const [selectedSavedSession, setSelectedSavedSession] =
     useState<SavedCleaningSessionDetail | null>(null);
+  const [restoredRuleSet, setRestoredRuleSet] = useState<RestoredRuleSet | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [isDetectingStructure, setIsDetectingStructure] = useState(false);
   const [isAnalyzingQuality, setIsAnalyzingQuality] = useState(false);
@@ -246,6 +254,10 @@ function App() {
   const clearSaveSessionStatus = () => {
     setSaveSessionErrorMessage(null);
     setSaveSessionSuccessMessage(null);
+  };
+
+  const clearRestoredRuleSet = () => {
+    setRestoredRuleSet(null);
   };
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
@@ -701,6 +713,22 @@ function App() {
           <p className="eyebrow">Detection workspace</p>
           <h2 id="upload-title">Validate a file and inspect its raw structure</h2>
         </div>
+
+        {restoredRuleSet && (
+          <div className="restore-banner" aria-label="Restored cleaning rules">
+            <div>
+              <span className="status-label">Restored rule set</span>
+              <h3>Cleaning rules restored from saved session</h3>
+              <p>
+                {restoredRuleSet.selectedRules.length} rules from {restoredRuleSet.sourceFilename}
+                {" "}are ready. Upload a new file to apply them.
+              </p>
+            </div>
+            <button type="button" onClick={clearRestoredRuleSet}>
+              Clear restored rules
+            </button>
+          </div>
+        )}
 
         <div className="workspace-grid">
           <form className="upload-panel" onSubmit={handleValidate}>

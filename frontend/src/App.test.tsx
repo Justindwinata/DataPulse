@@ -410,6 +410,7 @@ describe("App", () => {
     expect(screen.getByText("Choose a tabular file")).toBeInTheDocument();
     expect(screen.getByText("Rule-Based Cleaning")).toBeInTheDocument();
     expect(screen.getByText("Cleaned CSV Export")).toBeInTheDocument();
+    expect(screen.queryByText(/restore file/i)).not.toBeInTheDocument();
   });
 
   it("shows selected file metadata", () => {
