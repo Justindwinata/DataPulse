@@ -129,6 +129,18 @@ DP-0010 adds saved-session HTML report replay:
 
 Saved report replay does not require the original file to be uploaded again. It is metadata-based and cannot regenerate full cleaned CSV output from history.
 
+DP-0011 adds saved rule set restore:
+
+- `GET /sessions/{session_id}/rules` endpoint for retrieving saved selected rules
+- Metadata-only rule restore notes that original uploaded files are not stored
+- Frontend Reuse Cleaning Rules action in saved session detail
+- Restored rule banner in the main workflow
+- Restored rules are preselected after a new file is uploaded, structured, and profiled
+- Users can edit restored rule selections before generating cleaned preview
+- Users can clear restored rules without deleting the saved session
+
+Saved sessions restore only rule sets and helpful context. A fresh upload is required for validation, structure detection, quality analysis, cleaning preview, export, and live reports.
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -142,6 +154,7 @@ Saved report replay does not require the original file to be uploaded again. It 
 9. Open a professional HTML cleaning report.
 10. Review saved cleaning history.
 11. Open saved HTML reports from local history.
+12. Reuse saved cleaning rule sets on a newly uploaded file.
 
 ## Current Limitations
 
@@ -154,8 +167,10 @@ Saved report replay does not require the original file to be uploaded again. It 
 - HTML cleaning report generation exists
 - Local SQLite saved cleaning history exists
 - Saved-session HTML report replay exists
+- Saved rule set restore exists
 - Original uploaded files are not stored in history
 - Saved reports cannot reprocess original files
+- Saved rule sets require a fresh upload before real processing/export
 - No cloud sync
 - No PDF export
 - No XLSX export
@@ -331,5 +346,13 @@ GET /sessions/{session_id}/report.html
 ```
 
 The saved report endpoint returns standalone `text/html; charset=utf-8` content generated from stored session metadata. It does not require file re-upload, does not reprocess the original file, and clearly states that original uploaded files are not stored.
+
+Saved session rule sets:
+
+```http
+GET /sessions/{session_id}/rules
+```
+
+The saved rule set endpoint returns selected cleaning rules and metadata-only notes. It does not return uploaded file content and states that a new upload is required before applying restored rules.
 
 The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules while preserving honest implementation-status metadata.

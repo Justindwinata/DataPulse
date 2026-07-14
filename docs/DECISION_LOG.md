@@ -95,3 +95,11 @@ DP-0010 generates saved HTML reports from stored session metadata. This lets use
 ## 2026-07-14 - No Export Regeneration From History
 
 Saved session reports do not reprocess source data or regenerate full cleaned CSV output. Re-exporting should require a current uploaded file so DataPulse does not imply that metadata-only history contains the original dataset.
+
+## 2026-07-15 - Restore Rule Sets, Not Files
+
+DP-0011 restores only selected cleaning rule codes from saved sessions. Users must upload a new file before validation, profiling, cleaning preview, export, or live report generation can run.
+
+## 2026-07-15 - Current File Recommendations Still Win Context
+
+Restored rules are preselected alongside recommendations from the newly uploaded file. Recommendation badges continue to come from current-file issue detection so DataPulse does not imply that old quality findings apply to new data.

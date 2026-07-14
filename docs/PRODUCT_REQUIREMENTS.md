@@ -66,6 +66,7 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0008: standalone HTML cleaning report generation and frontend report opening workflow.
 - DP-0009: local SQLite saved cleaning session history, metadata-first session detail, and frontend History workflow.
 - DP-0010: saved-session HTML report replay from local history without original file re-upload.
+- DP-0011: saved rule set restore for applying prior rule selections to a newly uploaded file.
 
 ## Cleaning Model
 
@@ -84,3 +85,5 @@ DP-0008 generates standalone HTML reports from uploaded data and selected determ
 DP-0009 stores saved cleaning session metadata in local SQLite. History records include source metadata, selected sheet name, structure summary, quality summary, selected rules, cleaning summary, rule effects, export/report metadata, timestamps, and an optional small cleaned preview snapshot. Original uploaded files are not stored, history is not cloud-synced, and saved records do not replace the need to review source data before future exports.
 
 DP-0010 generates saved-session HTML reports from stored metadata. Reports are useful for reviewing prior cleaning decisions without re-uploading the original file. They cannot reprocess the original file, regenerate full cleaned CSV output from history, or claim that the saved snapshot represents the full source dataset.
+
+DP-0011 restores selected cleaning rule codes from saved sessions. Restored rules are preselected only after a new file is uploaded, structured, and profiled. Users can edit or clear restored rules. Saved sessions do not restore files, reprocess saved data, regenerate cleaned CSV, or create full live reports from old uploads.

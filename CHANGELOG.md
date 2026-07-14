@@ -2,6 +2,22 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.11.0 - DP-0011 Saved Rule Set Restore Workflow
+
+### Added
+
+- Added `GET /sessions/{session_id}/rules` endpoint for metadata-only saved rule retrieval.
+- Added backend rule-set response contract with original-file-not-stored and new-upload-required notes.
+- Added frontend saved rule set client.
+- Added Reuse Cleaning Rules action in saved session detail.
+- Added restored rule set banner and clear action in the main workflow.
+- Added restored rule preselection after new-file quality analysis.
+- Added restored badges on cleaning rule cards.
+
+### Not Included
+
+- Original uploaded file storage, original file restore, saved-session reprocessing, cloud sync, authentication, deployment, risky type conversions, PDF export, XLSX export, AI/LLM cleaning, or Excel formatting/formula/chart/pivot preservation.
+
 ## 0.10.0 - DP-0010 Saved Session HTML Report Replay
 
 ### Added

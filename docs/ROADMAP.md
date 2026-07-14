@@ -84,9 +84,17 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Add frontend Open Saved HTML Report action in History detail.
 - Status: implemented.
 
+## DP-0011 - Saved Rule Set Restore
+
+- Reuse selected cleaning rules from a saved session.
+- Require a fresh file upload before applying restored rules.
+- Mark restored rules in the cleaning workflow.
+- Allow users to edit or clear restored rules.
+- Status: implemented.
+
 ## Later Ideas
 
-- Saved session restore flow for applying a previous rule set to a newly uploaded file.
+- Saved workflow templates with user-defined names.
 - Better type profiling for numeric and date columns.
 - Safer large-file limits and streaming previews.
 - PDF or richer report export options, if needed after the HTML report is stable.
