@@ -20,6 +20,7 @@ import {
   createSession,
   deleteSession,
   generateSavedSessionReport,
+  getSavedSessionRules,
   getSession,
   listSessions,
 } from "./api/savedSessions";
@@ -80,6 +81,7 @@ vi.mock("./api/savedSessions", async (importOriginal) => {
     createSession: vi.fn(),
     deleteSession: vi.fn(),
     generateSavedSessionReport: vi.fn(),
+    getSavedSessionRules: vi.fn(),
     getSession: vi.fn(),
     listSessions: vi.fn(),
   };
@@ -397,6 +399,7 @@ describe("App", () => {
     vi.mocked(createSession).mockReset();
     vi.mocked(deleteSession).mockReset();
     vi.mocked(generateSavedSessionReport).mockReset();
+    vi.mocked(getSavedSessionRules).mockReset();
     vi.mocked(getSession).mockReset();
     vi.mocked(listSessions).mockReset();
     vi.stubGlobal("confirm", vi.fn(() => true));
@@ -978,9 +981,46 @@ describe("App", () => {
     });
     expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
     expect(screen.getByText(/trim_whitespace/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Reuse Cleaning Rules" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Open Saved HTML Report" })).toBeInTheDocument();
     expect(screen.getByText(/Saved report replay is metadata-based/)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /PDF/i })).not.toBeInTheDocument();
+  });
+
+  it("restores saved cleaning rules from history detail", async () => {
+    vi.mocked(listSessions).mockResolvedValue({ sessions: [savedSessionDetail], total_count: 1 });
+    vi.mocked(getSession).mockResolvedValue(savedSessionDetail);
+    vi.mocked(getSavedSessionRules).mockResolvedValue({
+      session_id: 7,
+      source_filename: "messy.csv",
+      selected_rules: ["trim_whitespace", "remove_empty_rows"],
+      selected_rules_count: 2,
+      created_at: "2026-07-14T00:00:00Z",
+      original_file_storage_note: "Original uploaded files are not stored by DataPulse.",
+      new_upload_required_note: "Upload a new file before applying these restored cleaning rules.",
+    });
+    const scrollIntoView = vi.fn();
+    Element.prototype.scrollIntoView = scrollIntoView;
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Load Saved Sessions" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "View Detail" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "View Detail" }));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Reuse Cleaning Rules" })).toBeInTheDocument();
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Reuse Cleaning Rules" }));
+
+    await waitFor(() => {
+      expect(screen.getByLabelText("Restored cleaning rules")).toBeInTheDocument();
+    });
+    expect(screen.getByText(/2 rules from messy.csv/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Upload a new file to apply them/).length).toBeGreaterThan(0);
+    expect(vi.mocked(getSavedSessionRules)).toHaveBeenCalledWith(7);
+    expect(vi.mocked(deleteSession)).not.toHaveBeenCalled();
+    expect(scrollIntoView).toHaveBeenCalled();
   });
 
   it("opens a saved HTML report from session detail", async () => {

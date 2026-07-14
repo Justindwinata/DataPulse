@@ -51,6 +51,16 @@ export type SavedCleaningSessionListResponse = {
   total_count: number;
 };
 
+export type SavedCleaningRuleSetResponse = {
+  session_id: number;
+  source_filename: string;
+  selected_rules: string[];
+  selected_rules_count: number;
+  created_at: string;
+  original_file_storage_note: string;
+  new_upload_required_note: string;
+};
+
 export class SavedSessionsError extends Error {
   constructor(message = "Saved sessions request failed. Confirm the backend is running and try again.") {
     super(message);
@@ -117,6 +127,13 @@ export async function generateSavedSessionReport(
   } catch (error) {
     throw new SavedSessionsError("Saved session report returned an unreadable response.");
   }
+}
+
+export async function getSavedSessionRules(
+  sessionId: number,
+  apiBaseUrl: string = defaultApiBaseUrl,
+): Promise<SavedCleaningRuleSetResponse> {
+  return requestJson<SavedCleaningRuleSetResponse>(`${apiBaseUrl}/sessions/${sessionId}/rules`);
 }
 
 async function requestJson<T>(url: string, init?: RequestInit): Promise<T> {

@@ -5,6 +5,7 @@ import {
   createSession,
   deleteSession,
   generateSavedSessionReport,
+  getSavedSessionRules,
   getSession,
   listSessions,
   type SavedCleaningSessionCreate,
@@ -130,12 +131,40 @@ describe("saved sessions client", () => {
     expect(fetchMock).toHaveBeenCalledWith("http://api.test/sessions/1/report.html");
   });
 
+  it("gets saved session rules with metadata-only notes", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        session_id: 1,
+        source_filename: "messy.csv",
+        selected_rules: ["trim_whitespace"],
+        selected_rules_count: 1,
+        created_at: "2026-07-14T00:00:00Z",
+        original_file_storage_note: "Original uploaded files are not stored by DataPulse.",
+        new_upload_required_note: "Upload a new file before applying these restored cleaning rules.",
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await getSavedSessionRules(1, "http://api.test");
+
+    expect(result.selected_rules).toEqual(["trim_whitespace"]);
+    expect(result.new_upload_required_note).toContain("Upload a new file");
+    expect(fetchMock).toHaveBeenCalledWith("http://api.test/sessions/1/rules", undefined);
+  });
+
   it("throws a safe error when saved report generation fails", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
 
     await expect(generateSavedSessionReport(404, "http://api.test")).rejects.toThrow(
       "Saved session report request failed with status 404.",
     );
+  });
+
+  it("throws a safe error when saved rules request fails", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+
+    await expect(getSavedSessionRules(404, "http://api.test")).rejects.toThrow(SavedSessionsError);
   });
 
   it("throws a safe error when the backend returns an error", async () => {

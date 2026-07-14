@@ -36,6 +36,7 @@ import {
   createSession,
   deleteSession,
   generateSavedSessionReport,
+  getSavedSessionRules,
   getSession,
   listSessions,
   type SavedCleaningSessionDetail,
@@ -208,6 +209,13 @@ function formatDateTime(value: string): string {
   return new Date(value).toLocaleString();
 }
 
+function toCleaningRuleCodes(ruleCodes: string[]): CleaningRuleCode[] {
+  const availableRuleCodes = new Set(cleaningRules.map((rule) => rule.code));
+  return ruleCodes.filter((ruleCode): ruleCode is CleaningRuleCode =>
+    availableRuleCodes.has(ruleCode as CleaningRuleCode),
+  );
+}
+
 function App() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] =
@@ -229,6 +237,7 @@ function App() {
   const [saveSessionSuccessMessage, setSaveSessionSuccessMessage] = useState<string | null>(null);
   const [historyErrorMessage, setHistoryErrorMessage] = useState<string | null>(null);
   const [historySuccessMessage, setHistorySuccessMessage] = useState<string | null>(null);
+  const [reuseRulesErrorMessage, setReuseRulesErrorMessage] = useState<string | null>(null);
   const [savedReportErrorMessage, setSavedReportErrorMessage] = useState<string | null>(null);
   const [savedReportSuccessMessage, setSavedReportSuccessMessage] = useState<string | null>(null);
   const [savedSessions, setSavedSessions] = useState<SavedCleaningSessionSummary[]>([]);
@@ -245,6 +254,7 @@ function App() {
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [isDeletingSessionId, setIsDeletingSessionId] = useState<number | null>(null);
   const [isGeneratingSavedReport, setIsGeneratingSavedReport] = useState(false);
+  const [isRestoringRules, setIsRestoringRules] = useState(false);
 
   const clearReportStatus = () => {
     setReportErrorMessage(null);
@@ -605,6 +615,7 @@ function App() {
   const handleOpenSessionDetail = async (sessionId: number) => {
     setHistoryErrorMessage(null);
     setHistorySuccessMessage(null);
+    setReuseRulesErrorMessage(null);
     setSavedReportErrorMessage(null);
     setSavedReportSuccessMessage(null);
 
@@ -616,6 +627,39 @@ function App() {
           ? error.message
           : "Loading saved session detail failed. Confirm the backend is running and try again.",
       );
+    }
+  };
+
+  const handleReuseCleaningRules = async () => {
+    if (!selectedSavedSession) {
+      setReuseRulesErrorMessage("Open a saved session detail before reusing cleaning rules.");
+      return;
+    }
+
+    setIsRestoringRules(true);
+    setReuseRulesErrorMessage(null);
+    setHistorySuccessMessage(null);
+
+    try {
+      const ruleSet = await getSavedSessionRules(selectedSavedSession.id);
+      const restoredRules = toCleaningRuleCodes(ruleSet.selected_rules);
+      setRestoredRuleSet({
+        sessionId: ruleSet.session_id,
+        sourceFilename: ruleSet.source_filename,
+        selectedRules: restoredRules,
+        createdAt: ruleSet.created_at,
+      });
+      setSelectedRules(restoredRules);
+      setHistorySuccessMessage("Restored cleaning rules. Upload a new file to apply them.");
+      document.getElementById("upload-title")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (error) {
+      setReuseRulesErrorMessage(
+        error instanceof SavedSessionsError
+          ? error.message
+          : "Restoring saved cleaning rules failed. Confirm the backend is running and try again.",
+      );
+    } finally {
+      setIsRestoringRules(false);
     }
   };
 
@@ -1625,6 +1669,27 @@ function App() {
                       </div>
                     </div>
                   )}
+                  <div className="reuse-rules-panel" aria-label="Reuse cleaning rules panel">
+                    <div>
+                      <span className="status-label">Rule set</span>
+                      <h3>Reuse Cleaning Rules</h3>
+                      <p>
+                        Reuse the selected rules from this saved session. Original files are not
+                        stored, so upload a new file before applying these rules.
+                      </p>
+                    </div>
+                    <button
+                      className="secondary-action"
+                      type="button"
+                      disabled={isRestoringRules}
+                      onClick={handleReuseCleaningRules}
+                    >
+                      {isRestoringRules ? "Restoring rules..." : "Reuse Cleaning Rules"}
+                    </button>
+                    {reuseRulesErrorMessage && (
+                      <p className="export-status error">{reuseRulesErrorMessage}</p>
+                    )}
+                  </div>
                   <div className="saved-report-panel" aria-label="Saved report replay panel">
                     <div>
                       <span className="status-label">HTML</span>
