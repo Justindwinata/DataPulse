@@ -67,6 +67,31 @@ def test_csv_export_with_generate_missing_column_names() -> None:
     assert text == "name,email,column_3\nAri,a@example.com,10\n"
 
 
+def test_csv_export_with_advanced_dirty_sales_rules() -> None:
+    text = export_text(
+        "dirty-cafe.csv",
+        (
+            b"Transaction ID,Item,Quantity,Price Per Unit,Total Spent,Payment Method,Location,Transaction Date\n"
+            b"TXN_1, coffee ,2,3.0,ERROR,credit card,In-store,01/31/2026\n"
+            b"TXN_2,UNKNOWN,ERROR,4.0,20.0,UNKNOWN,,ERROR\n"
+        ),
+        [
+            CleaningRuleCode.NORMALIZE_MISSING_TOKENS,
+            CleaningRuleCode.CLEAN_NUMERIC_VALUES,
+            CleaningRuleCode.CLEAN_DATE_VALUES,
+            CleaningRuleCode.STANDARDIZE_CATEGORY_TEXT,
+            CleaningRuleCode.RECALCULATE_LINE_TOTALS,
+            CleaningRuleCode.STANDARDIZE_COLUMN_NAMES,
+        ],
+    )
+
+    assert text == (
+        "transaction_id,item,quantity,price_per_unit,total_spent,payment_method,location,transaction_date\n"
+        "TXN_1,Coffee,2,3,6,Credit Card,In-Store,2026-01-31\n"
+        "TXN_2,,,4,,,,\n"
+    )
+
+
 def test_multiple_rules_applied_together() -> None:
     text = export_text(
         "combo.csv",

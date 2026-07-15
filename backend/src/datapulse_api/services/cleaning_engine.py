@@ -2,6 +2,8 @@ import csv
 import json
 import re
 from collections import Counter
+from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from io import BytesIO, StringIO
 from typing import Iterable
 
@@ -41,8 +43,23 @@ from datapulse_api.services.file_validation import detect_extension, sanitize_fi
 MAX_CLEANING_SAMPLE_ROWS = 50
 MAX_CLEANING_PREVIEW_ROWS = 20
 GENERIC_COLUMN_RE = re.compile(r"^column_\d+$")
+MISSING_TOKEN_VALUES = {"unknown", "error", "n/a", "na", "null", "none", "nan", "-"}
+DATE_FORMATS = (
+    "%Y-%m-%d",
+    "%Y/%m/%d",
+    "%m/%d/%Y",
+    "%d/%m/%Y",
+    "%d-%m-%Y",
+    "%m-%d-%Y",
+    "%Y-%m-%d %H:%M:%S",
+)
 RULE_LABELS = {
     CleaningRuleCode.TRIM_WHITESPACE: "Trim whitespace",
+    CleaningRuleCode.NORMALIZE_MISSING_TOKENS: "Normalize missing tokens",
+    CleaningRuleCode.CLEAN_NUMERIC_VALUES: "Clean numeric values",
+    CleaningRuleCode.CLEAN_DATE_VALUES: "Clean date values",
+    CleaningRuleCode.STANDARDIZE_CATEGORY_TEXT: "Standardize category text",
+    CleaningRuleCode.RECALCULATE_LINE_TOTALS: "Recalculate line totals",
     CleaningRuleCode.REMOVE_EMPTY_ROWS: "Remove empty rows",
     CleaningRuleCode.REMOVE_DUPLICATE_ROWS: "Remove duplicate rows",
     CleaningRuleCode.DROP_EMPTY_COLUMNS: "Drop empty columns",
@@ -243,6 +260,149 @@ def _apply_rule(
             len(affected_columns),
         )
 
+    if rule == CleaningRuleCode.NORMALIZE_MISSING_TOKENS:
+        changed_cells = 0
+        affected_rows: set[int] = set()
+        affected_columns: set[int] = set()
+        cleaned_rows = []
+        for row_index, row in enumerate(rows):
+            cleaned_row = []
+            for column_index, cell in enumerate(row):
+                normalized = cell.strip()
+                cleaned = "" if _is_missing_token(cell) else normalized
+                if cleaned != cell:
+                    changed_cells += 1
+                    affected_rows.add(row_index)
+                    affected_columns.add(column_index)
+                cleaned_row.append(cleaned)
+            cleaned_rows.append(cleaned_row)
+        return columns, cleaned_rows, _effect(
+            rule,
+            changed_cells > 0,
+            f"Normalized {changed_cells} missing placeholder cells."
+            if changed_cells
+            else "No missing placeholder tokens were found in the sampled cells.",
+            len(affected_rows),
+            len(affected_columns),
+        )
+
+    if rule == CleaningRuleCode.CLEAN_NUMERIC_VALUES:
+        numeric_indexes = _numeric_column_indexes(columns, rows)
+        changed_cells = 0
+        affected_rows: set[int] = set()
+        affected_columns: set[int] = set()
+        cleaned_rows = []
+        for row_index, row in enumerate(rows):
+            cleaned_row = list(row)
+            for column_index in numeric_indexes:
+                cell = row[column_index] if column_index < len(row) else ""
+                cleaned = _clean_numeric_cell(cell)
+                if cleaned != cell:
+                    changed_cells += 1
+                    affected_rows.add(row_index)
+                    affected_columns.add(column_index)
+                cleaned_row[column_index] = cleaned
+            cleaned_rows.append(cleaned_row)
+        return columns, cleaned_rows, _effect(
+            rule,
+            changed_cells > 0,
+            f"Cleaned {changed_cells} numeric-like sampled cells."
+            if changed_cells
+            else "No numeric-like values needed cleanup in the sampled cells.",
+            len(affected_rows),
+            len(affected_columns),
+        )
+
+    if rule == CleaningRuleCode.CLEAN_DATE_VALUES:
+        date_indexes = _date_column_indexes(columns, rows)
+        changed_cells = 0
+        affected_rows: set[int] = set()
+        affected_columns: set[int] = set()
+        cleaned_rows = []
+        for row_index, row in enumerate(rows):
+            cleaned_row = list(row)
+            for column_index in date_indexes:
+                cell = row[column_index] if column_index < len(row) else ""
+                cleaned = _clean_date_cell(cell)
+                if cleaned != cell:
+                    changed_cells += 1
+                    affected_rows.add(row_index)
+                    affected_columns.add(column_index)
+                cleaned_row[column_index] = cleaned
+            cleaned_rows.append(cleaned_row)
+        return columns, cleaned_rows, _effect(
+            rule,
+            changed_cells > 0,
+            f"Cleaned {changed_cells} date-like sampled cells."
+            if changed_cells
+            else "No date-like values needed cleanup in the sampled cells.",
+            len(affected_rows),
+            len(affected_columns),
+        )
+
+    if rule == CleaningRuleCode.STANDARDIZE_CATEGORY_TEXT:
+        category_indexes = _category_column_indexes(columns, rows)
+        changed_cells = 0
+        affected_rows: set[int] = set()
+        affected_columns: set[int] = set()
+        cleaned_rows = []
+        for row_index, row in enumerate(rows):
+            cleaned_row = list(row)
+            for column_index in category_indexes:
+                cell = row[column_index] if column_index < len(row) else ""
+                cleaned = _clean_category_cell(cell)
+                if cleaned != cell:
+                    changed_cells += 1
+                    affected_rows.add(row_index)
+                    affected_columns.add(column_index)
+                cleaned_row[column_index] = cleaned
+            cleaned_rows.append(cleaned_row)
+        return columns, cleaned_rows, _effect(
+            rule,
+            changed_cells > 0,
+            f"Standardized {changed_cells} category-like sampled cells."
+            if changed_cells
+            else "No category-like values needed standardization in the sampled cells.",
+            len(affected_rows),
+            len(affected_columns),
+        )
+
+    if rule == CleaningRuleCode.RECALCULATE_LINE_TOTALS:
+        indexes = _line_total_column_indexes(columns)
+        if indexes is None:
+            return columns, rows, _effect(
+                rule,
+                False,
+                "No confident quantity, unit price, and total column set was found.",
+                0,
+                0,
+            )
+        quantity_index, price_index, total_index = indexes
+        changed_rows = 0
+        cleaned_rows = []
+        for row in rows:
+            cleaned_row = list(row)
+            quantity = _parse_number(row[quantity_index]) if quantity_index < len(row) else None
+            price = _parse_number(row[price_index]) if price_index < len(row) else None
+            if quantity is None or price is None:
+                recalculated = ""
+            else:
+                recalculated = _format_decimal(quantity * price)
+            current_total = row[total_index] if total_index < len(row) else ""
+            if recalculated != current_total:
+                changed_rows += 1
+                cleaned_row[total_index] = recalculated
+            cleaned_rows.append(cleaned_row)
+        return columns, cleaned_rows, _effect(
+            rule,
+            changed_rows > 0,
+            f"Recalculated line totals for {changed_rows} sampled rows."
+            if changed_rows
+            else "Existing line totals already matched quantity times unit price in the sampled rows.",
+            changed_rows,
+            1 if changed_rows else 0,
+        )
+
     if rule == CleaningRuleCode.REMOVE_EMPTY_ROWS:
         cleaned_rows = [row for row in rows if any(cell.strip() for cell in row)]
         removed = len(rows) - len(cleaned_rows)
@@ -391,6 +551,144 @@ def _make_unique_columns(columns: list[str]) -> list[str]:
         seen[column] = count + 1
         unique.append(column if count == 0 else f"{column}_{count + 1}")
     return unique
+
+
+def _is_missing_token(value: str) -> bool:
+    normalized = value.strip().lower()
+    return not normalized or normalized in MISSING_TOKEN_VALUES
+
+
+def _parse_number(value: str) -> Decimal | None:
+    normalized = value.strip().replace(",", "")
+    if normalized.startswith("$"):
+        normalized = normalized[1:]
+    if not normalized or normalized.lower() in MISSING_TOKEN_VALUES:
+        return None
+    try:
+        return Decimal(normalized)
+    except InvalidOperation:
+        return None
+
+
+def _format_decimal(value: Decimal) -> str:
+    formatted = format(value.normalize(), "f")
+    if "." in formatted:
+        formatted = formatted.rstrip("0").rstrip(".")
+    return formatted or "0"
+
+
+def _clean_numeric_cell(value: str) -> str:
+    if _is_missing_token(value):
+        return ""
+    parsed = _parse_number(value)
+    if parsed is None:
+        return value.strip()
+    return _format_decimal(parsed)
+
+
+def _parse_date(value: str) -> datetime | None:
+    normalized = value.strip()
+    for date_format in DATE_FORMATS:
+        try:
+            return datetime.strptime(normalized, date_format)
+        except ValueError:
+            continue
+    return None
+
+
+def _clean_date_cell(value: str) -> str:
+    if _is_missing_token(value):
+        return ""
+    parsed = _parse_date(value)
+    return parsed.date().isoformat() if parsed else ""
+
+
+def _clean_category_cell(value: str) -> str:
+    if _is_missing_token(value):
+        return ""
+    collapsed = re.sub(r"\s+", " ", value.strip())
+    return " ".join(_title_hyphenated_word(word) for word in collapsed.split(" "))
+
+
+def _title_hyphenated_word(value: str) -> str:
+    return "-".join(part.capitalize() for part in value.split("-"))
+
+
+def _normalized_column_name(column: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", column.strip().lower()).strip("_")
+
+
+def _numeric_column_indexes(columns: list[str], rows: list[list[str]]) -> list[int]:
+    indexes: list[int] = []
+    for column_index, column in enumerate(columns):
+        values = [row[column_index] if column_index < len(row) else "" for row in rows]
+        if _is_numeric_candidate(column, values):
+            indexes.append(column_index)
+    return indexes
+
+
+def _date_column_indexes(columns: list[str], rows: list[list[str]]) -> list[int]:
+    indexes: list[int] = []
+    for column_index, column in enumerate(columns):
+        values = [row[column_index] if column_index < len(row) else "" for row in rows]
+        if _is_date_candidate(column, values):
+            indexes.append(column_index)
+    return indexes
+
+
+def _category_column_indexes(columns: list[str], rows: list[list[str]]) -> list[int]:
+    indexes: list[int] = []
+    for column_index, column in enumerate(columns):
+        normalized_column = _normalized_column_name(column)
+        values = [row[column_index] if column_index < len(row) else "" for row in rows]
+        if "id" in normalized_column or _is_numeric_candidate(column, values) or _is_date_candidate(column, values):
+            continue
+        non_missing = [value.strip() for value in values if not _is_missing_token(value)]
+        if not non_missing:
+            continue
+        unique_normalized = {re.sub(r"\s+", " ", value).casefold() for value in non_missing}
+        if len(unique_normalized) <= max(20, int(len(non_missing) * 0.4)):
+            indexes.append(column_index)
+    return indexes
+
+
+def _is_numeric_candidate(column: str, values: list[str]) -> bool:
+    normalized_column = _normalized_column_name(column)
+    if any(token in normalized_column for token in ("quantity", "amount", "price", "total", "spent", "cost")):
+        return True
+    non_missing = [value for value in values if not _is_missing_token(value)]
+    if not non_missing:
+        return False
+    numeric_count = sum(1 for value in non_missing if _parse_number(value) is not None)
+    return numeric_count / len(non_missing) >= 0.8
+
+
+def _is_date_candidate(column: str, values: list[str]) -> bool:
+    normalized_column = _normalized_column_name(column)
+    if "date" in normalized_column or normalized_column.endswith("_at"):
+        return True
+    non_missing = [value for value in values if not _is_missing_token(value)]
+    if not non_missing:
+        return False
+    date_count = sum(1 for value in non_missing if _parse_date(value) is not None)
+    return date_count / len(non_missing) >= 0.8
+
+
+def _line_total_column_indexes(columns: list[str]) -> tuple[int, int, int] | None:
+    normalized = [_normalized_column_name(column) for column in columns]
+    quantity = next((index for index, column in enumerate(normalized) if column in {"quantity", "qty"}), None)
+    price = next((index for index, column in enumerate(normalized) if "price" in column and "unit" in column), None)
+    total = next(
+        (
+            index
+            for index, column in enumerate(normalized)
+            if "total" in column and ("spent" in column or "amount" in column or column == "total")
+        ),
+        None,
+    )
+    if quantity is None or price is None or total is None:
+        return None
+    return quantity, price, total
 
 
 def _normalize_row(row: list[str], column_count: int) -> list[str]:

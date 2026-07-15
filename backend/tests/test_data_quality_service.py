@@ -94,7 +94,7 @@ def test_detects_mixed_numeric_and_date_text_patterns() -> None:
         content=(
             b"name,amount,order_date,mixed\n"
             b"Ari,1200,2026-01-01,10\n"
-            b"Justin,1500,2026-01-02,unknown\n"
+            b"Justin,1500,2026-01-02,not_numeric\n"
         ),
     )
 
@@ -105,6 +105,34 @@ def test_detects_mixed_numeric_and_date_text_patterns() -> None:
     assert column_by_name(result, "amount").inferred_type == "number"
     assert column_by_name(result, "order_date").inferred_type == "date"
     assert column_by_name(result, "mixed").inferred_type == "mixed"
+
+
+def test_detects_dirty_cafe_sales_placeholder_numeric_date_and_total_patterns() -> None:
+    result = detect_data_quality(
+        filename="dirty_cafe_sales.csv",
+        content_type="text/csv",
+        content=(
+            b"Transaction ID,Item,Quantity,Price Per Unit,Total Spent,Payment Method,Location,Transaction Date\n"
+            b"TXN_1, Coffee ,2,3.0,ERROR,Credit Card,In-store,2023-07-19\n"
+            b"TXN_2,UNKNOWN,ERROR,4.0,20.0,UNKNOWN,,ERROR\n"
+            b"TXN_3,Salad,5,1,5,Cash,Takeaway,2023-04-27\n"
+        ),
+    )
+
+    codes = issue_codes(result)
+    assert "placeholder_missing_values" in codes
+    assert "invalid_numeric_values" in codes
+    assert "invalid_date_values" in codes
+    assert "category_text_inconsistency" in codes
+    assert "inconsistent_line_totals" in codes
+
+    issues = {issue.code: issue for issue in result.issues}
+    assert issues["placeholder_missing_values"].suggested_cleaning_rule == "normalize_missing_tokens"
+    assert issues["invalid_numeric_values"].suggested_cleaning_rule == "clean_numeric_values"
+    assert issues["invalid_date_values"].suggested_cleaning_rule == "clean_date_values"
+    assert issues["inconsistent_line_totals"].suggested_cleaning_rule == "recalculate_line_totals"
+    assert column_by_name(result, "quantity").inferred_type == "number"
+    assert column_by_name(result, "transaction_date").inferred_type == "date"
 
 
 def test_detects_inconsistent_row_widths_from_structure_warnings() -> None:

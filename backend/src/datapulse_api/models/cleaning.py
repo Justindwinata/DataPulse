@@ -22,6 +22,11 @@ class CleaningIssueSeverity(StrEnum):
 
 class CleaningRuleType(StrEnum):
     TRIM_WHITESPACE = "trim_whitespace"
+    NORMALIZE_MISSING_TOKENS = "normalize_missing_tokens"
+    CLEAN_NUMERIC_VALUES = "clean_numeric_values"
+    CLEAN_DATE_VALUES = "clean_date_values"
+    STANDARDIZE_CATEGORY_TEXT = "standardize_category_text"
+    RECALCULATE_LINE_TOTALS = "recalculate_line_totals"
     REMOVE_EMPTY_ROWS = "remove_empty_rows"
     REMOVE_DUPLICATE_ROWS = "remove_duplicate_rows"
     DROP_EMPTY_COLUMNS = "drop_empty_columns"
@@ -35,6 +40,11 @@ class CleaningRuleType(StrEnum):
 
 class CleaningRuleCode(StrEnum):
     TRIM_WHITESPACE = "trim_whitespace"
+    NORMALIZE_MISSING_TOKENS = "normalize_missing_tokens"
+    CLEAN_NUMERIC_VALUES = "clean_numeric_values"
+    CLEAN_DATE_VALUES = "clean_date_values"
+    STANDARDIZE_CATEGORY_TEXT = "standardize_category_text"
+    RECALCULATE_LINE_TOTALS = "recalculate_line_totals"
     REMOVE_EMPTY_ROWS = "remove_empty_rows"
     REMOVE_DUPLICATE_ROWS = "remove_duplicate_rows"
     DROP_EMPTY_COLUMNS = "drop_empty_columns"

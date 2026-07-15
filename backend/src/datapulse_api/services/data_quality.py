@@ -2,6 +2,7 @@ import csv
 import re
 from collections import Counter
 from datetime import datetime
+from decimal import Decimal, InvalidOperation
 from io import BytesIO, StringIO
 
 from openpyxl import load_workbook
@@ -37,6 +38,7 @@ from datapulse_api.services.file_validation import detect_extension, sanitize_fi
 HIGH_MISSING_THRESHOLD = 50.0
 MAX_SAMPLE_VALUES = 5
 MAX_QUALITY_SAMPLE_ROWS = 50
+MISSING_TOKEN_VALUES = {"unknown", "error", "n/a", "na", "null", "none", "nan", "-"}
 DATE_FORMATS = (
     "%Y-%m-%d",
     "%Y/%m/%d",
@@ -144,7 +146,7 @@ def _build_column_profiles(columns: list[str], rows: list[list[str]]) -> list[Co
     for column_index, column_name in enumerate(columns):
         values = [row[column_index] if column_index < len(row) else "" for row in rows]
         stripped_values = [value.strip() for value in values]
-        non_empty_values = [value for value in stripped_values if value]
+        non_empty_values = [value for value in stripped_values if value and not _is_missing_token(value)]
         missing_count = row_count - len(non_empty_values)
         unique_values = list(dict.fromkeys(non_empty_values))
         profiles.append(
@@ -298,6 +300,75 @@ def _detect_issues(
             )
         )
 
+    placeholder_columns, placeholder_rows = _detect_placeholder_missing_tokens(rows, columns)
+    if placeholder_columns:
+        issues.append(
+            DataQualityIssue(
+                code="placeholder_missing_values",
+                title="Placeholder missing values detected",
+                message="Some cells contain placeholders such as UNKNOWN, ERROR, N/A, NULL, or dash values.",
+                severity=IssueSeverity.WARNING,
+                affected_columns=placeholder_columns,
+                affected_row_count=placeholder_rows,
+                suggested_cleaning_rule="normalize_missing_tokens",
+            )
+        )
+
+    invalid_numeric_columns, invalid_numeric_rows = _detect_invalid_numeric_values(rows, columns)
+    if invalid_numeric_columns:
+        issues.append(
+            DataQualityIssue(
+                code="invalid_numeric_values",
+                title="Invalid numeric values detected",
+                message="Numeric-like columns contain non-numeric placeholders or invalid values.",
+                severity=IssueSeverity.WARNING,
+                affected_columns=invalid_numeric_columns,
+                affected_row_count=invalid_numeric_rows,
+                suggested_cleaning_rule="clean_numeric_values",
+            )
+        )
+
+    invalid_date_columns, invalid_date_rows = _detect_invalid_date_values(rows, columns)
+    if invalid_date_columns:
+        issues.append(
+            DataQualityIssue(
+                code="invalid_date_values",
+                title="Invalid date values detected",
+                message="Date-like columns contain unparseable values or placeholders.",
+                severity=IssueSeverity.WARNING,
+                affected_columns=invalid_date_columns,
+                affected_row_count=invalid_date_rows,
+                suggested_cleaning_rule="clean_date_values",
+            )
+        )
+
+    category_columns = _detect_category_text_columns(rows, columns)
+    if category_columns:
+        issues.append(
+            DataQualityIssue(
+                code="category_text_inconsistency",
+                title="Category text can be standardized",
+                message="Some text columns look like repeated categories that can be standardized safely.",
+                severity=IssueSeverity.INFO,
+                affected_columns=category_columns,
+                suggested_cleaning_rule="standardize_category_text",
+            )
+        )
+
+    inconsistent_total_rows = _detect_inconsistent_line_totals(rows, columns)
+    if inconsistent_total_rows:
+        issues.append(
+            DataQualityIssue(
+                code="inconsistent_line_totals",
+                title="Line totals can be recalculated",
+                message="Quantity, price, and total columns were detected; line totals can be recalculated where quantity and price are valid.",
+                severity=IssueSeverity.INFO,
+                affected_columns=_line_total_columns(columns),
+                affected_row_count=inconsistent_total_rows,
+                suggested_cleaning_rule="recalculate_line_totals",
+            )
+        )
+
     mixed_columns = [
         profile.column_name
         for profile in profiles
@@ -327,7 +398,7 @@ def _detect_issues(
                 message="Some sampled columns contain numeric-looking text values.",
                 severity=IssueSeverity.INFO,
                 affected_columns=numeric_columns,
-                suggested_cleaning_rule="convert_numeric_columns",
+                suggested_cleaning_rule="clean_numeric_values",
             )
         )
 
@@ -344,7 +415,7 @@ def _detect_issues(
                 message="Some sampled columns contain date-looking text values.",
                 severity=IssueSeverity.INFO,
                 affected_columns=date_columns,
-                suggested_cleaning_rule="convert_date_columns",
+                suggested_cleaning_rule="clean_date_values",
             )
         )
 
@@ -398,6 +469,8 @@ def _infer_column_type(values: list[str]) -> InferredColumnType:
 
 def _detect_value_type(value: str) -> InferredColumnType:
     normalized = value.strip()
+    if _is_missing_token(normalized):
+        return InferredColumnType.EMPTY
     if _is_boolean(normalized):
         return InferredColumnType.BOOLEAN
     if _is_number(normalized):
@@ -420,6 +493,11 @@ def _is_number(value: str) -> bool:
     return True
 
 
+def _is_missing_token(value: str) -> bool:
+    normalized = value.strip().lower()
+    return not normalized or normalized in MISSING_TOKEN_VALUES
+
+
 def _is_date(value: str) -> bool:
     normalized = value.strip()
     for date_format in DATE_FORMATS:
@@ -429,6 +507,158 @@ def _is_date(value: str) -> bool:
             continue
         return True
     return False
+
+
+def _parse_number(value: str) -> Decimal | None:
+    normalized = value.strip().replace(",", "")
+    if normalized.startswith("$"):
+        normalized = normalized[1:]
+    if not normalized:
+        return None
+    try:
+        return Decimal(normalized)
+    except InvalidOperation:
+        return None
+
+
+def _normalize_column_name(column: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "_", column.strip().lower()).strip("_")
+
+
+def _is_numeric_candidate(column: str, values: list[str]) -> bool:
+    normalized_column = _normalize_column_name(column)
+    if any(token in normalized_column for token in ("quantity", "amount", "price", "total", "spent", "cost")):
+        return True
+    non_missing = [value for value in values if not _is_missing_token(value)]
+    if not non_missing:
+        return False
+    numeric_count = sum(1 for value in non_missing if _parse_number(value) is not None)
+    return numeric_count / len(non_missing) >= 0.8
+
+
+def _is_date_candidate(column: str, values: list[str]) -> bool:
+    normalized_column = _normalize_column_name(column)
+    if "date" in normalized_column or normalized_column.endswith("_at"):
+        return True
+    non_missing = [value for value in values if not _is_missing_token(value)]
+    if not non_missing:
+        return False
+    date_count = sum(1 for value in non_missing if _is_date(value))
+    return date_count / len(non_missing) >= 0.8
+
+
+def _detect_placeholder_missing_tokens(rows: list[list[str]], columns: list[str]) -> tuple[list[str], int]:
+    affected_indexes: set[int] = set()
+    affected_rows = 0
+    for row in rows:
+        row_has_placeholder = False
+        for column_index, cell in enumerate(row):
+            normalized = cell.strip().lower()
+            if normalized in MISSING_TOKEN_VALUES:
+                affected_indexes.add(column_index)
+                row_has_placeholder = True
+        if row_has_placeholder:
+            affected_rows += 1
+    return [columns[index] for index in sorted(affected_indexes)], affected_rows
+
+
+def _detect_invalid_numeric_values(rows: list[list[str]], columns: list[str]) -> tuple[list[str], int]:
+    affected_indexes: set[int] = set()
+    affected_rows: set[int] = set()
+    for column_index, column in enumerate(columns):
+        values = [row[column_index] if column_index < len(row) else "" for row in rows]
+        if not _is_numeric_candidate(column, values):
+            continue
+        for row_index, value in enumerate(values):
+            if _is_missing_token(value):
+                if value.strip():
+                    affected_indexes.add(column_index)
+                    affected_rows.add(row_index)
+                continue
+            if _parse_number(value) is None:
+                affected_indexes.add(column_index)
+                affected_rows.add(row_index)
+    return [columns[index] for index in sorted(affected_indexes)], len(affected_rows)
+
+
+def _detect_invalid_date_values(rows: list[list[str]], columns: list[str]) -> tuple[list[str], int]:
+    affected_indexes: set[int] = set()
+    affected_rows: set[int] = set()
+    for column_index, column in enumerate(columns):
+        values = [row[column_index] if column_index < len(row) else "" for row in rows]
+        if not _is_date_candidate(column, values):
+            continue
+        for row_index, value in enumerate(values):
+            if _is_missing_token(value):
+                if value.strip():
+                    affected_indexes.add(column_index)
+                    affected_rows.add(row_index)
+                continue
+            if not _is_date(value):
+                affected_indexes.add(column_index)
+                affected_rows.add(row_index)
+    return [columns[index] for index in sorted(affected_indexes)], len(affected_rows)
+
+
+def _detect_category_text_columns(rows: list[list[str]], columns: list[str]) -> list[str]:
+    category_columns: list[str] = []
+    for column_index, column in enumerate(columns):
+        normalized_column = _normalize_column_name(column)
+        if "id" in normalized_column or _is_numeric_candidate(column, [row[column_index] for row in rows]):
+            continue
+        values = [row[column_index] if column_index < len(row) else "" for row in rows]
+        if _is_date_candidate(column, values):
+            continue
+        non_missing = [value.strip() for value in values if not _is_missing_token(value)]
+        if not non_missing:
+            continue
+        unique_normalized = {re.sub(r"\s+", " ", value).casefold() for value in non_missing}
+        has_cleanable_values = any(_clean_category_preview(value) != value for value in values)
+        if has_cleanable_values and len(unique_normalized) <= max(20, int(len(non_missing) * 0.4)):
+            category_columns.append(column)
+    return category_columns
+
+
+def _clean_category_preview(value: str) -> str:
+    if _is_missing_token(value):
+        return ""
+    collapsed = re.sub(r"\s+", " ", value.strip())
+    return " ".join("-".join(part.capitalize() for part in word.split("-")) for word in collapsed.split(" "))
+
+
+def _line_total_column_indexes(columns: list[str]) -> tuple[int, int, int] | None:
+    normalized = [_normalize_column_name(column) for column in columns]
+    quantity = next((index for index, column in enumerate(normalized) if column in {"quantity", "qty"}), None)
+    price = next((index for index, column in enumerate(normalized) if "price" in column and "unit" in column), None)
+    total = next((index for index, column in enumerate(normalized) if "total" in column and ("spent" in column or "amount" in column or column == "total")), None)
+    if quantity is None or price is None or total is None:
+        return None
+    return quantity, price, total
+
+
+def _line_total_columns(columns: list[str]) -> list[str]:
+    indexes = _line_total_column_indexes(columns)
+    return [columns[index] for index in indexes] if indexes else []
+
+
+def _detect_inconsistent_line_totals(rows: list[list[str]], columns: list[str]) -> int:
+    indexes = _line_total_column_indexes(columns)
+    if indexes is None:
+        return 0
+    quantity_index, price_index, total_index = indexes
+    affected_rows = 0
+    recognized_rows = 0
+    for row in rows:
+        quantity = _parse_number(row[quantity_index]) if quantity_index < len(row) else None
+        price = _parse_number(row[price_index]) if price_index < len(row) else None
+        total = _parse_number(row[total_index]) if total_index < len(row) else None
+        if quantity is None or price is None:
+            continue
+        recognized_rows += 1
+        expected = quantity * price
+        if total is None or total != expected:
+            affected_rows += 1
+    return affected_rows if recognized_rows else 0
 
 
 def _is_boolean(value: str) -> bool:

@@ -104,6 +104,66 @@ def test_generate_missing_column_names() -> None:
     assert result.after_summary.renamed_columns_count == 1
 
 
+def test_normalize_missing_tokens() -> None:
+    result = generate_cleaning_preview(
+        filename="missing.csv",
+        content_type="text/csv",
+        content=b"name,item,amount\nAri,UNKNOWN,ERROR\nJustin,N/A,-\n",
+        rules=[CleaningRuleCode.NORMALIZE_MISSING_TOKENS],
+    )
+
+    assert result.cleaned_preview.rows == [["Ari", "", ""], ["Justin", "", ""]]
+    assert result.rule_effects[0].affected_rows == 2
+
+
+def test_clean_numeric_values_for_numeric_like_columns() -> None:
+    result = generate_cleaning_preview(
+        filename="numbers.csv",
+        content_type="text/csv",
+        content=b"name,Quantity,Price Per Unit\nAri,\" 1,200 \",3.0\nJustin,ERROR,UNKNOWN\n",
+        rules=[CleaningRuleCode.CLEAN_NUMERIC_VALUES],
+    )
+
+    assert result.cleaned_preview.rows == [["Ari", "1200", "3"], ["Justin", "", ""]]
+    assert result.rule_effects[0].affected_columns == 2
+
+
+def test_clean_date_values_for_date_like_columns() -> None:
+    result = generate_cleaning_preview(
+        filename="dates.csv",
+        content_type="text/csv",
+        content=b"name,Transaction Date\nAri,01/31/2026\nJustin,ERROR\nCase,not-a-date\n",
+        rules=[CleaningRuleCode.CLEAN_DATE_VALUES],
+    )
+
+    assert result.cleaned_preview.rows == [["Ari", "2026-01-31"], ["Justin", ""], ["Case", ""]]
+    assert result.rule_effects[0].affected_rows == 3
+
+
+def test_standardize_category_text() -> None:
+    result = generate_cleaning_preview(
+        filename="categories.csv",
+        content_type="text/csv",
+        content=b"Item,Payment Method,Transaction ID\n coffee ,credit card,TXN_1\nTEA,DIGITAL WALLET,TXN_2\n",
+        rules=[CleaningRuleCode.STANDARDIZE_CATEGORY_TEXT],
+    )
+
+    assert result.cleaned_preview.rows == [["Coffee", "Credit Card", "TXN_1"], ["Tea", "Digital Wallet", "TXN_2"]]
+    assert result.rule_effects[0].affected_columns == 2
+
+
+def test_recalculate_line_totals() -> None:
+    result = generate_cleaning_preview(
+        filename="sales.csv",
+        content_type="text/csv",
+        content=b"Quantity,Price Per Unit,Total Spent\n2,3.0,ERROR\n5,4.0,10.0\nUNKNOWN,4.0,20.0\n",
+        rules=[CleaningRuleCode.CLEAN_NUMERIC_VALUES, CleaningRuleCode.RECALCULATE_LINE_TOTALS],
+    )
+
+    assert result.cleaned_preview.rows == [["2", "3", "6"], ["5", "4", "20"], ["", "4", ""]]
+    assert result.rule_effects[1].affected_rows == 3
+
+
 def test_multiple_rules_applied_together() -> None:
     result = generate_cleaning_preview(
         filename="combo.csv",
@@ -111,6 +171,7 @@ def test_multiple_rules_applied_together() -> None:
         content=b"Customer Name,Empty\n Ari ,\n Ari ,\n,\n",
         rules=[
             CleaningRuleCode.TRIM_WHITESPACE,
+            CleaningRuleCode.NORMALIZE_MISSING_TOKENS,
             CleaningRuleCode.REMOVE_EMPTY_ROWS,
             CleaningRuleCode.REMOVE_DUPLICATE_ROWS,
             CleaningRuleCode.DROP_EMPTY_COLUMNS,
@@ -123,7 +184,7 @@ def test_multiple_rules_applied_together() -> None:
     assert result.after_summary.row_count == 1
     assert result.after_summary.removed_empty_rows_count == 1
     assert result.after_summary.removed_duplicate_rows_count == 1
-    assert len(result.rule_effects) == 5
+    assert len(result.rule_effects) == 6
 
 
 def test_cleaned_preview_is_bounded_to_twenty_rows() -> None:

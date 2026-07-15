@@ -37,6 +37,27 @@ def test_workflow_template_create_requires_selected_rules() -> None:
         WorkflowTemplateCreate(name="Cleanup", selected_rules=[])
 
 
+def test_workflow_template_create_accepts_advanced_rule_codes() -> None:
+    template = WorkflowTemplateCreate(
+        name="Cafe cleanup",
+        selected_rules=[
+            "normalize_missing_tokens",
+            "clean_numeric_values",
+            "clean_date_values",
+            "standardize_category_text",
+            "recalculate_line_totals",
+        ],
+    )
+
+    assert [rule.value for rule in template.selected_rules] == [
+        "normalize_missing_tokens",
+        "clean_numeric_values",
+        "clean_date_values",
+        "standardize_category_text",
+        "recalculate_line_totals",
+    ]
+
+
 def test_workflow_template_create_rejects_unsupported_rule_code() -> None:
     with pytest.raises(ValidationError):
         WorkflowTemplateCreate(name="Cleanup", selected_rules=["convert_numeric_columns"])

@@ -39,6 +39,30 @@ def test_build_cleaning_report_for_csv_composes_workflow_outputs() -> None:
     assert report.cleaning.cleaned_preview.columns == ["customer_name", "amount"]
 
 
+def test_build_cleaning_report_includes_advanced_rule_effects() -> None:
+    report = build_cleaning_report(
+        filename="dirty-cafe.csv",
+        content_type="text/csv",
+        content=(
+            b"Transaction ID,Item,Quantity,Price Per Unit,Total Spent,Transaction Date\n"
+            b"TXN_1,UNKNOWN,2,3.0,ERROR,01/31/2026\n"
+        ),
+        rules=[
+            CleaningRuleCode.NORMALIZE_MISSING_TOKENS,
+            CleaningRuleCode.CLEAN_NUMERIC_VALUES,
+            CleaningRuleCode.CLEAN_DATE_VALUES,
+            CleaningRuleCode.RECALCULATE_LINE_TOTALS,
+        ],
+    )
+
+    labels = {effect.label for effect in report.cleaning.rule_effects}
+    assert "Normalize missing tokens" in labels
+    assert "Clean numeric values" in labels
+    assert "Clean date values" in labels
+    assert "Recalculate line totals" in labels
+    assert report.cleaning.cleaned_preview.rows == [["TXN_1", "", "2", "3", "6", "2026-01-31"]]
+
+
 def test_build_cleaning_report_for_xlsx_selected_sheet() -> None:
     report = build_cleaning_report(
         filename="workbook.xlsx",

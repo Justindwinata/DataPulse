@@ -17,6 +17,11 @@ from datapulse_api.models import (
 def test_cleaning_rule_code_values_are_stable_api_contracts() -> None:
     assert [rule.value for rule in CleaningRuleCode] == [
         "trim_whitespace",
+        "normalize_missing_tokens",
+        "clean_numeric_values",
+        "clean_date_values",
+        "standardize_category_text",
+        "recalculate_line_totals",
         "remove_empty_rows",
         "remove_duplicate_rows",
         "drop_empty_columns",
