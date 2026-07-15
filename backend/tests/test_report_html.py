@@ -26,6 +26,7 @@ def test_html_report_renders_required_sections() -> None:
     assert "Rule Effects" in html
     assert "Export Summary" in html
     assert "Limitations" in html
+    assert "Remove duplicate rows (remove_duplicate_rows)" in html
     assert "remove_duplicate_rows" in html
 
 

@@ -225,7 +225,7 @@ def _render_saved_quality_summary(report: SavedSessionReportDocument) -> str:
 def _render_cleaning_summary(report: CleaningReportDocument) -> str:
     cleaning = report.cleaning
     selected_rules = (
-        ", ".join(rule.value for rule in report.metadata.selected_rules)
+        ", ".join(_rule_display(rule.value) for rule in report.metadata.selected_rules)
         if report.metadata.selected_rules
         else "No rules selected"
     )
@@ -363,7 +363,7 @@ def _rule_effects(effects: list[CleaningRuleEffect]) -> str:
     headers = ["Rule", "Status", "Message", "Affected rows", "Affected columns"]
     rows = [
         [
-            effect.rule.value,
+            _rule_display(effect.rule.value),
             effect.status.value,
             effect.message,
             str(effect.affected_rows),
@@ -372,6 +372,10 @@ def _rule_effects(effects: list[CleaningRuleEffect]) -> str:
         for effect in effects
     ]
     return _table(headers, rows)
+
+
+def _rule_display(rule: str) -> str:
+    return f"{rule.replace('_', ' ').capitalize()} ({rule})"
 
 
 def _warnings(title: str, warnings: list[StructureWarning]) -> str:
