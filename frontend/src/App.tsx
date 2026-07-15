@@ -150,6 +150,36 @@ const cleaningRules: Array<{
     issueCodes: ["leading_trailing_whitespace"],
   },
   {
+    code: "normalize_missing_tokens",
+    label: "Normalize missing tokens",
+    description: "Convert placeholders such as UNKNOWN, ERROR, N/A, NULL, and dash values into empty cells.",
+    issueCodes: ["placeholder_missing_values"],
+  },
+  {
+    code: "clean_numeric_values",
+    label: "Clean numeric values",
+    description: "Normalize numeric-like columns and remove safe number formatting characters.",
+    issueCodes: ["invalid_numeric_values", "numeric_values_as_text"],
+  },
+  {
+    code: "clean_date_values",
+    label: "Clean date values",
+    description: "Parse date-like columns into ISO YYYY-MM-DD values when formats are recognized.",
+    issueCodes: ["invalid_date_values", "date_values_as_text"],
+  },
+  {
+    code: "standardize_category_text",
+    label: "Standardize category text",
+    description: "Normalize repeated category values with cleaner spacing and casing.",
+    issueCodes: ["category_text_inconsistency"],
+  },
+  {
+    code: "recalculate_line_totals",
+    label: "Recalculate line totals",
+    description: "For recognized sales-style tables, recalculate totals from quantity and unit price.",
+    issueCodes: ["inconsistent_line_totals"],
+  },
+  {
     code: "remove_empty_rows",
     label: "Remove empty rows",
     description: "Remove rows where every sampled cell is empty.",

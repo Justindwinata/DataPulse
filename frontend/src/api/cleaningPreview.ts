@@ -1,5 +1,10 @@
 export type CleaningRuleCode =
   | "trim_whitespace"
+  | "normalize_missing_tokens"
+  | "clean_numeric_values"
+  | "clean_date_values"
+  | "standardize_category_text"
+  | "recalculate_line_totals"
   | "remove_empty_rows"
   | "remove_duplicate_rows"
   | "drop_empty_columns"

@@ -249,13 +249,13 @@ const qualityResponse: DataQualityResult = {
   selected_sheet_name: null,
   sampled_row_count: 2,
   detected_column_count: 2,
-  total_issue_count: 2,
+  total_issue_count: 4,
   severity_counts: {
-    info: 1,
-    warning: 1,
+    info: 2,
+    warning: 2,
     critical: 0,
   },
-  quality_score: 91,
+  quality_score: 82,
   issues: [
     {
       code: "missing_values",
@@ -282,7 +282,25 @@ const qualityResponse: DataQualityResult = {
       severity: "info",
       affected_columns: ["amount"],
       affected_row_count: null,
-      suggested_cleaning_rule: "convert_numeric_columns",
+      suggested_cleaning_rule: "clean_numeric_values",
+    },
+    {
+      code: "placeholder_missing_values",
+      title: "Placeholder missing values detected",
+      message: "Some cells contain placeholders such as UNKNOWN, ERROR, N/A, NULL, or dash values.",
+      severity: "warning",
+      affected_columns: ["amount"],
+      affected_row_count: 1,
+      suggested_cleaning_rule: "normalize_missing_tokens",
+    },
+    {
+      code: "category_text_inconsistency",
+      title: "Category text can be standardized",
+      message: "Some text columns look like repeated categories that can be standardized safely.",
+      severity: "info",
+      affected_columns: ["name"],
+      affected_row_count: null,
+      suggested_cleaning_rule: "standardize_category_text",
     },
   ],
   columns: [
@@ -306,7 +324,7 @@ const qualityResponse: DataQualityResult = {
       inferred_type: "number",
       unique_count: 1,
       sample_values: ["1200"],
-      issues: ["missing_values", "numeric_values_as_text"],
+      issues: ["missing_values", "numeric_values_as_text", "placeholder_missing_values"],
     },
   ],
   messages: [],
@@ -663,7 +681,7 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("Quality score")).toBeInTheDocument();
     });
-    expect(screen.getByText("91")).toBeInTheDocument();
+    expect(screen.getByText("82")).toBeInTheDocument();
     expect(screen.getByText("Missing values detected")).toBeInTheDocument();
     expect(screen.getByRole("columnheader", { name: "Column" })).toBeInTheDocument();
     expect(screen.getByRole("cell", { name: "amount" })).toBeInTheDocument();
@@ -709,6 +727,11 @@ describe("App", () => {
     });
     expect(screen.getAllByText("Recommended").length).toBeGreaterThan(0);
     expect(screen.getByLabelText(/Trim whitespace/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Normalize missing tokens/i)).toBeChecked();
+    expect(screen.getByLabelText(/Clean numeric values/i)).toBeChecked();
+    expect(screen.getByLabelText(/Clean date values/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Standardize category text/i)).toBeChecked();
+    expect(screen.getByLabelText(/Recalculate line totals/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Generate Cleaned Preview" }));
 
@@ -724,7 +747,12 @@ describe("App", () => {
     expect(screen.getAllByText(/Original uploaded files are not stored/).length).toBeGreaterThan(0);
     expect(vi.mocked(generateCleaningPreview)).toHaveBeenCalledWith(
       expect.any(File),
-      expect.arrayContaining(["trim_whitespace"]),
+      expect.arrayContaining([
+        "trim_whitespace",
+        "normalize_missing_tokens",
+        "clean_numeric_values",
+        "standardize_category_text",
+      ]),
       undefined,
     );
 
@@ -735,7 +763,7 @@ describe("App", () => {
     });
     expect(vi.mocked(exportCleanedCsv)).toHaveBeenCalledWith(
       expect.any(File),
-      expect.arrayContaining(["trim_whitespace"]),
+      expect.arrayContaining(["trim_whitespace", "normalize_missing_tokens", "clean_numeric_values"]),
       undefined,
     );
     expect(createObjectUrl).toHaveBeenCalled();
@@ -838,7 +866,7 @@ describe("App", () => {
     const payload = vi.mocked(createSession).mock.calls[0][0];
     expect(payload).not.toHaveProperty("file");
     expect(payload.structure_summary).toMatchObject({ detected_column_count: 2 });
-    expect(payload.quality_summary).toMatchObject({ quality_score: 91 });
+    expect(payload.quality_summary).toMatchObject({ quality_score: 82 });
   });
 
   it("renders save session error state", async () => {
