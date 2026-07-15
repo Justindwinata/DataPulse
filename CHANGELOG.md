@@ -2,6 +2,26 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.13.1 - Targeted Dirty Data Cleaning Hardening
+
+### Added
+
+- Added placeholder missing-value issue detection for tokens such as `UNKNOWN`, `ERROR`, `N/A`, `NULL`, `nan`, and dash values.
+- Added invalid numeric and invalid date issue detection for numeric-like and date-like columns.
+- Added category text inconsistency detection for repeated category-like text values that can be standardized safely.
+- Added recognized sales line-total detection for quantity, unit price, and total columns.
+- Added deterministic cleaning rules for normalizing missing tokens, cleaning numeric values, cleaning date values, standardizing category text, and recalculating recognized line totals.
+- Added frontend rule cards, recommendations, template compatibility, export compatibility, and report coverage for the new rule codes.
+
+### Changed
+
+- Numeric-looking and date-looking text issue suggestions now point to implemented cleaning rules instead of future conversion placeholders.
+- Local `dataset/` files are ignored so ad hoc dirty datasets can be used for QA without being committed accidentally.
+
+### Not Included
+
+- AI/LLM cleaning, arbitrary value imputation, risky type conversion guesses, PDF export, XLSX export, authentication, cloud sync, deployment, or claims of perfect cleaning.
+
 ## 0.13.0 - DP-0013 Product Stabilization, UX Polish, and Demo Readiness
 
 ### Added

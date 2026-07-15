@@ -72,7 +72,17 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 
 ## Cleaning Model
 
-Cleaning is rule-based and deterministic. Current cleaning rules include trimming whitespace, removing empty rows, removing duplicate rows, dropping fully empty columns, standardizing column names, and generating missing column names. Future rules may include promoting a detected header row, normalizing text casing, and carefully converting numeric or date columns.
+Cleaning is rule-based and deterministic. Current cleaning rules include trimming whitespace, normalizing missing tokens, cleaning numeric values, cleaning date values, standardizing category text, recalculating recognized line totals, removing empty rows, removing duplicate rows, dropping fully empty columns, standardizing column names, and generating missing column names.
+
+The advanced rules are conservative:
+
+- Missing-token normalization converts placeholders such as `UNKNOWN`, `ERROR`, `N/A`, `NULL`, `nan`, empty strings, and dash values to empty cells.
+- Numeric cleaning applies only to numeric-like columns and does not guess arbitrary text values.
+- Date cleaning applies only to date-like columns and emits ISO `YYYY-MM-DD` values for recognized formats.
+- Category text standardization applies only to repeated category-like text columns.
+- Line-total recalculation applies only when quantity, unit price, and total columns are confidently recognized.
+
+Future rules may include promoting a detected header row and more explicit user-controlled type conversion options.
 
 ## Limitations
 

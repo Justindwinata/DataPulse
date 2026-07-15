@@ -111,10 +111,17 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Stabilize template ordering after edits.
 - Status: implemented for local portfolio demo readiness.
 
+## Targeted Cleaning Hardening
+
+- Improve quality detection for placeholder missing tokens, invalid numeric values, invalid date values, category text inconsistencies, and recognized sales line-total opportunities.
+- Add deterministic cleaning rules for missing-token normalization, numeric cleanup, date cleanup, category text standardization, and recognized line-total recalculation.
+- Validate behavior against local dirty datasets while keeping ad hoc `dataset/` files out of Git.
+- Status: implemented as generic hardening after DP-0013.
+
 ## Later Ideas
 
 - Template search, filtering, and import/export as portable JSON.
-- Better type profiling for numeric and date columns.
+- More user-controlled type conversion rules beyond conservative numeric/date cleanup.
 - Safer large-file limits and streaming previews.
 - PDF or richer report export options, if needed after the HTML report is stable.
 - Screenshots and short demo video for GitHub/LinkedIn.

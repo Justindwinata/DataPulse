@@ -25,6 +25,7 @@ vite.config.d.ts
 !.env.example
 backend/data/*.sqlite3
 backend/data/*.sqlite3-*
+dataset/
 
 # Editor
 .idea/

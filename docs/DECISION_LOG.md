@@ -119,3 +119,7 @@ DP-0013 prioritizes navigation, copy, responsive polish, QA documentation, demo 
 ## 2026-07-15 - Demo Data Must Be Synthetic
 
 Committed demo files use fictional CSV/TSV rows only. They demonstrate common messy-data patterns without storing private data or implying that DataPulse needs permanent source-file storage.
+
+## 2026-07-16 - Advanced Cleanup Rules Must Stay Conservative
+
+Targeted dirty-data hardening adds missing-token normalization, numeric cleanup, date cleanup, category text standardization, and recognized line-total recalculation as explicit user-selected rules. These rules do not impute missing values, guess arbitrary invalid values, or depend on a filename. Local `dataset/` files are ignored so real/manual QA datasets can remain outside the repository.

@@ -101,7 +101,7 @@ DP-0006 adds deterministic cleaning rule selection and cleaned preview:
 - `POST /files/apply-cleaning-preview` multipart endpoint
 - CSV, TSV, TXT, XLSX, and compatible XLS cleaning preview
 - Optional `sheet_name` form field for Excel selected-sheet cleaning
-- Cleaning rules for trimming whitespace, removing empty rows, removing duplicate rows, dropping empty columns, standardizing column names, and generating missing column names
+- Cleaning rules for trimming whitespace, normalizing missing tokens, cleaning numeric values, cleaning date values, standardizing category text, recalculating recognized line totals, removing empty rows, removing duplicate rows, dropping empty columns, standardizing column names, and generating missing column names
 - Before/after row and column summaries
 - Rule effects with applied/no-effect status and affected row/column counts
 - Sample-based cleaned preview capped at 20 rows
@@ -195,6 +195,17 @@ DP-0013 stabilizes the product for portfolio demo readiness:
 - Stabilized template ordering so recently edited templates appear first
 
 DP-0013 does not add major new product features. It focuses on cohesion, demo clarity, and reliability.
+
+Targeted dirty-data hardening after DP-0013 improves practical cleaning for messy cafe-sales-style datasets:
+
+- Detects placeholder missing values such as `UNKNOWN`, `ERROR`, `N/A`, `NULL`, `nan`, empty strings, and dash values
+- Detects invalid values in numeric-like and date-like columns
+- Detects repeated category text that can be safely standardized
+- Detects recognized sales line-total opportunities when quantity, unit price, and total columns are present
+- Adds deterministic rules for normalizing missing tokens, cleaning numeric values, cleaning date values, standardizing category text, and recalculating recognized line totals
+- Keeps the behavior generic; rules are not tied to a filename or hardcoded row values
+
+Local ad hoc datasets in `dataset/` are ignored by Git. They can be used for manual QA without adding user data or large external files to the repository.
 
 ## Planned Product Flow
 

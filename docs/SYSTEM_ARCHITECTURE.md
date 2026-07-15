@@ -105,21 +105,26 @@ Current data quality profiling rules:
 - Supported inputs: `.csv`, `.tsv`, `.txt`, `.xlsx`, `.xls`
 - Excel profiling requires a selected sheet name
 - Profiling is bounded and sample-based
-- Issue detection includes missing values, empty rows, empty columns, duplicate rows, duplicate headers, missing headers, messy headers, inconsistent row widths, leading/trailing whitespace, mixed type values, numeric-looking text, date-looking text, and high-missing columns
+- Issue detection includes missing values, placeholder missing tokens, empty rows, empty columns, duplicate rows, duplicate headers, missing headers, messy headers, inconsistent row widths, leading/trailing whitespace, mixed type values, numeric-looking text, invalid numeric values, date-looking text, invalid date values, category text inconsistencies, recognized line-total opportunities, and high-missing columns
 - Column profiles include missing counts, missing percentage, inferred type, unique count, sample values, and issue codes
 - Quality score starts at 100 and subtracts deterministic points by severity: critical issues cost more than warnings, warnings cost more than info notes
-- Suggested cleaning rules are returned as future-rule metadata only
+- Suggested cleaning rules point to deterministic implemented rules when available and remain advisory metadata
 
 Current cleaning preview rules:
 
 - `trim_whitespace`
+- `normalize_missing_tokens`
+- `clean_numeric_values`
+- `clean_date_values`
+- `standardize_category_text`
+- `recalculate_line_totals`
 - `remove_empty_rows`
 - `remove_duplicate_rows`
 - `drop_empty_columns`
 - `standardize_column_names`
 - `generate_missing_column_names`
 
-Cleaning preview is sample-based. Numeric conversion, date conversion, boolean conversion, and missing-value imputation are intentionally deferred because they can change data meaning.
+Cleaning preview is sample-based. Numeric and date cleanup rules are conservative and only normalize recognized numeric-like or date-like values. Boolean conversion, missing-value imputation, arbitrary category mapping, and guessed values remain intentionally deferred because they can change data meaning.
 
 Current cleaned CSV export rules:
 
