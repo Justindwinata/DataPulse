@@ -524,6 +524,32 @@ describe("App", () => {
     expect(screen.getByText(/Confirm the backend is running/)).toBeInTheDocument();
   });
 
+  it("clears a previous validation error after a successful validation response", async () => {
+    vi.mocked(validateUploadFile)
+      .mockRejectedValueOnce(new Error("backend down"))
+      .mockResolvedValueOnce(acceptedResponse);
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText(/Choose a tabular file/i), {
+      target: {
+        files: [new File(["name,total\nAda,10\n"], "messy.csv", { type: "text/csv" })],
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Validation request failed")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Validate upload" }));
+
+    await waitFor(() => {
+      expect(screen.getByText("Accepted")).toBeInTheDocument();
+    });
+    expect(screen.queryByText("Validation request failed")).not.toBeInTheDocument();
+    expect(screen.getByText("File extension is supported.")).toBeInTheDocument();
+  });
+
   it("renders structure summary, warnings, and preview table", async () => {
     vi.mocked(validateUploadFile).mockResolvedValue(acceptedResponse);
     vi.mocked(detectFileStructure).mockResolvedValue(structureResponse);

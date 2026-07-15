@@ -77,7 +77,7 @@ export async function generateCleaningPreview(
   file: File,
   rules: CleaningRuleCode[],
   sheetName?: string,
-  apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
+  apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000",
 ): Promise<CleaningPreviewResult> {
   const formData = new FormData();
   formData.append("file", file);

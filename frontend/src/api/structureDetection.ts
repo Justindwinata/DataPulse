@@ -79,7 +79,7 @@ export class StructureDetectionError extends Error {
 export async function detectFileStructure(
   file: File,
   sheetName?: string,
-  apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000",
+  apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000",
 ): Promise<StructureDetectionResult> {
   const formData = new FormData();
   formData.append("file", file);
