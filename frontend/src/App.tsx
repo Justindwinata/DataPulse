@@ -224,6 +224,19 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
+function qualityBand(score: number | null | undefined): "high" | "medium" | "low" | "unknown" {
+  if (score === null || score === undefined) {
+    return "unknown";
+  }
+  if (score >= 85) {
+    return "high";
+  }
+  if (score >= 60) {
+    return "medium";
+  }
+  return "low";
+}
+
 function uniqueAffectedColumns(issues: DataQualityIssue[]): string[] {
   return Array.from(new Set(issues.flatMap((issue) => issue.affected_columns)));
 }
@@ -2098,11 +2111,21 @@ function App() {
                   <tbody>
                     {savedSessions.map((session) => (
                       <tr key={session.id}>
-                        <td>{session.source_filename}</td>
-                        <td>{session.detected_extension}</td>
+                        <td>
+                          <span className="table-primary-text">{session.source_filename}</span>
+                        </td>
+                        <td>
+                          <span className="file-chip">{session.detected_extension}</span>
+                        </td>
                         <td>{session.selected_sheet_name ?? "-"}</td>
-                        <td>{numberOrDash(session.quality_score)}</td>
-                        <td>{session.selected_rules_count}</td>
+                        <td>
+                          <span className={`quality-badge ${qualityBand(session.quality_score)}`}>
+                            {numberOrDash(session.quality_score)}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="count-chip">{session.selected_rules_count}</span>
+                        </td>
                         <td>
                           {numberOrDash(session.rows_before)} {"->"} {numberOrDash(session.rows_after)}
                         </td>
@@ -2137,12 +2160,22 @@ function App() {
 
               {selectedSavedSession && (
                 <article className="session-detail" aria-label="Saved session detail">
-                  <h3>{selectedSavedSession.source_filename}</h3>
-                  <p>{selectedSavedSession.storage_note}</p>
+                  <div className="session-detail-header">
+                    <div>
+                      <span className="status-label">Session detail</span>
+                      <h3>{selectedSavedSession.source_filename}</h3>
+                      <p>{selectedSavedSession.storage_note}</p>
+                    </div>
+                    <span className="file-chip">{selectedSavedSession.detected_extension}</span>
+                  </div>
                   <div className="summary-grid compact-summary">
                     <article>
                       <span>Quality score</span>
-                      <strong>{numberOrDash(selectedSavedSession.quality_score)}</strong>
+                      <strong>
+                        <span className={`quality-badge ${qualityBand(selectedSavedSession.quality_score)}`}>
+                          {numberOrDash(selectedSavedSession.quality_score)}
+                        </span>
+                      </strong>
                       <p>{selectedSavedSession.total_issue_count} issues</p>
                     </article>
                     <article>
@@ -2371,9 +2404,13 @@ function App() {
                   <tbody>
                     {templates.map((template) => (
                       <tr key={template.id}>
-                        <td>{template.name}</td>
+                        <td>
+                          <span className="table-primary-text">{template.name}</span>
+                        </td>
                         <td>{template.description ?? "-"}</td>
-                        <td>{template.selected_rules_count}</td>
+                        <td>
+                          <span className="count-chip">{template.selected_rules_count}</span>
+                        </td>
                         <td>{template.source_filename ?? "-"}</td>
                         <td>{formatDateTime(template.updated_at)}</td>
                         <td>
@@ -2402,8 +2439,14 @@ function App() {
 
               {selectedTemplate && (
                 <article className="session-detail" aria-label="Workflow template detail">
-                  <h3>{selectedTemplate.name}</h3>
-                  <p>{selectedTemplate.storage_note}</p>
+                  <div className="session-detail-header">
+                    <div>
+                      <span className="status-label">Template detail</span>
+                      <h3>{selectedTemplate.name}</h3>
+                      <p>{selectedTemplate.storage_note}</p>
+                    </div>
+                    <span className="count-chip">{selectedTemplate.selected_rules_count} rules</span>
+                  </div>
                   <form className="template-form-panel" onSubmit={handleSaveTemplateEdit}>
                     <label>
                       Template name
