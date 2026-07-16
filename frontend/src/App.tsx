@@ -1079,11 +1079,14 @@ function App() {
       <nav className="app-nav" aria-label="DataPulse sections">
         <a className="nav-brand" href="#product-title" aria-label="DataPulse home">
           <span>DataPulse</span>
+          <small>Local Data Ops</small>
         </a>
         <div className="nav-links">
-          <a href="#upload-title">Workflow</a>
+          <a href="#product-title">Home</a>
+          <a href="#upload-title">Workspace</a>
           <a href="#history-title">History</a>
           <a href="#templates-title">Templates</a>
+          <a href="#reports-title">Reports</a>
         </div>
       </nav>
 
@@ -1907,7 +1910,7 @@ function App() {
                 <div className="report-panel" aria-label="HTML cleaning report panel">
                   <div>
                     <span className="status-label">HTML report</span>
-                    <h3>Open HTML Cleaning Report</h3>
+                    <h3 id="reports-title">Open HTML Cleaning Report</h3>
                     <p>
                       Report format: HTML. Includes structure summary, data quality issues,
                       column profiles, selected rules, rule effects, cleaned preview, and CSV export notes.

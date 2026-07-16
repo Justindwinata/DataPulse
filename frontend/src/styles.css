@@ -91,28 +91,32 @@ p {
 
 .app-shell {
   min-height: 100vh;
+  padding-left: 280px;
   background:
     linear-gradient(180deg, rgba(219, 225, 255, 0.78), rgba(248, 249, 255, 0) 430px),
     var(--color-bg);
 }
 
 .app-nav {
-  position: sticky;
-  top: 0;
+  position: fixed;
+  inset: 0 auto 0 0;
   z-index: 10;
   display: flex;
-  justify-content: space-between;
-  gap: var(--space-2);
-  border-bottom: 1px solid rgba(195, 198, 215, 0.88);
-  background: rgba(255, 255, 255, 0.92);
-  padding: 10px var(--space-5);
-  backdrop-filter: blur(14px);
+  flex-direction: column;
+  width: 280px;
+  justify-content: flex-start;
+  gap: var(--space-6);
+  border-right: 1px solid rgba(195, 198, 215, 0.88);
+  background: #eaf1ff;
+  padding: var(--space-6) var(--space-4);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.65);
 }
 
 .nav-links {
   display: flex;
+  flex-direction: column;
   gap: var(--space-2);
-  align-items: center;
+  align-items: stretch;
 }
 
 .app-nav a {
@@ -129,8 +133,13 @@ p {
 }
 
 .app-nav .nav-brand {
+  min-height: auto;
+  display: grid;
+  gap: var(--space-1);
+  align-items: start;
   color: var(--color-primary-strong);
   font-weight: 900;
+  padding-block: var(--space-2);
 }
 
 .nav-brand span {
@@ -148,12 +157,29 @@ p {
   box-shadow: 7px 0 0 #2563eb, 14px 0 0 #b4c5ff;
 }
 
+.nav-brand small {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
 .app-nav a:hover,
 .app-nav a:focus-visible {
   border-color: var(--color-border-strong);
   background: var(--color-surface);
   color: var(--color-primary-strong);
   outline: none;
+}
+
+.nav-links a {
+  border-radius: var(--radius-md);
+  justify-content: flex-start;
+}
+
+.nav-links a[href="#upload-title"] {
+  border-color: transparent;
+  background: var(--color-primary-soft);
+  color: var(--color-primary);
 }
 
 .hero,
@@ -1241,6 +1267,39 @@ tbody td:first-child {
 }
 
 @media (max-width: 1024px) {
+  .app-shell {
+    padding-left: 0;
+  }
+
+  .app-nav {
+    position: sticky;
+    top: 0;
+    inset: auto;
+    flex-direction: row;
+    width: auto;
+    justify-content: space-between;
+    gap: var(--space-3);
+    border-right: 0;
+    border-bottom: 1px solid rgba(195, 198, 215, 0.88);
+    background: rgba(255, 255, 255, 0.94);
+    padding: 10px var(--space-5);
+    backdrop-filter: blur(14px);
+  }
+
+  .nav-links {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .app-nav .nav-brand {
+    align-items: center;
+    padding-block: 0;
+  }
+
+  .nav-brand small {
+    display: none;
+  }
+
   .hero {
     grid-template-columns: 1fr;
     min-height: auto;
