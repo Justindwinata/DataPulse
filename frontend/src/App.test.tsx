@@ -469,7 +469,9 @@ describe("App", () => {
     render(<App />);
 
     expect(screen.getByRole("heading", { name: "DataPulse" })).toBeInTheDocument();
-    expect(screen.getByText("Messy CSV & Excel Cleaner Studio")).toBeInTheDocument();
+    expect(
+      screen.getByText("Clean messy CSV and Excel files with visible rules."),
+    ).toBeInTheDocument();
     expect(screen.getByText("Choose a tabular file")).toBeInTheDocument();
     expect(screen.getByText("Rule-Based Cleaning")).toBeInTheDocument();
     expect(screen.getByText("Cleaned CSV Export")).toBeInTheDocument();

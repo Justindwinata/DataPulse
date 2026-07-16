@@ -1059,26 +1059,57 @@ function App() {
   return (
     <main className="app-shell">
       <nav className="app-nav" aria-label="DataPulse sections">
-        <a href="#upload-title">Workflow</a>
-        <a href="#history-title">History</a>
-        <a href="#templates-title">Templates</a>
+        <a className="nav-brand" href="#product-title" aria-label="DataPulse home">
+          <span>DataPulse</span>
+        </a>
+        <div className="nav-links">
+          <a href="#upload-title">Workflow</a>
+          <a href="#history-title">History</a>
+          <a href="#templates-title">Templates</a>
+        </div>
       </nav>
 
       <section className="hero" aria-labelledby="product-title">
         <div className="hero-copy">
-          <p className="eyebrow">CSV and Excel cleaning reports</p>
+          <p className="eyebrow">Local data preparation studio</p>
           <h1 id="product-title">DataPulse</h1>
-          <p className="subtitle">Messy CSV & Excel Cleaner Studio</p>
+          <p className="subtitle">Clean messy CSV and Excel files with visible rules.</p>
           <p className="description">
-            Upload a CSV-like or Excel file, validate it, detect structure,
-            analyze quality issues, apply deterministic cleaning rules, export CSV,
-            open standalone HTML reports, and apply named workflow templates to new uploads.
+            Validate a table-like file, inspect structure and quality issues, choose
+            deterministic cleaning rules, preview changes, export CSV, and save local
+            metadata-only sessions for repeatable portfolio demos.
           </p>
+          <div className="hero-actions" aria-label="Primary product actions">
+            <a className="hero-primary-action" href="#upload-title">Start workflow</a>
+            <a className="hero-secondary-action" href="#templates-title">Manage templates</a>
+          </div>
+          <ul className="hero-notes" aria-label="Product boundaries">
+            <li>No AI claims</li>
+            <li>No original file storage</li>
+            <li>CSV-first export</li>
+          </ul>
         </div>
         <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">DP-0012</span>
-          <strong>Workflow templates active</strong>
-          <p>Named templates store reusable cleaning rules only. New uploads are required for processing.</p>
+          <span className="status-label">Demo-ready scope</span>
+          <strong>Transparent cleaning from upload to report</strong>
+          <p>
+            DataPulse keeps every transformation explicit: detect issues, select rules,
+            review effects, then export or document the result.
+          </p>
+          <dl className="status-metrics">
+            <div>
+              <dt>Formats</dt>
+              <dd>CSV, TSV, TXT, XLSX, XLS</dd>
+            </div>
+            <div>
+              <dt>Storage</dt>
+              <dd>Local metadata only</dd>
+            </div>
+            <div>
+              <dt>Output</dt>
+              <dd>CSV + HTML report</dd>
+            </div>
+          </dl>
         </div>
       </section>
 
