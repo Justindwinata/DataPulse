@@ -26,6 +26,7 @@ vite.config.d.ts
 backend/data/*.sqlite3
 backend/data/*.sqlite3-*
 dataset/
+stitch_datapulse_saas_platform_design.zip
 
 # Editor
 .idea/
