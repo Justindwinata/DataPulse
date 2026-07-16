@@ -1269,6 +1269,22 @@ textarea:focus-visible,
   text-transform: uppercase;
 }
 
+.source-chip {
+  display: inline-block;
+  max-width: 240px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  padding: 5px 10px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
 .count-chip {
   border: 1px solid var(--color-border);
   background: var(--color-surface-muted);
@@ -1303,6 +1319,50 @@ textarea:focus-visible,
   display: grid;
   gap: var(--space-3);
   margin-top: var(--space-4);
+}
+
+.template-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+.template-summary-grid article {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background:
+    linear-gradient(180deg, rgba(37, 99, 235, 0.05), rgba(255, 255, 255, 0.88)),
+    var(--color-surface);
+  padding: var(--space-4);
+}
+
+.template-summary-grid span {
+  display: block;
+  color: var(--color-text-soft);
+  font-size: 0.75rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.template-summary-grid strong {
+  display: block;
+  margin-top: var(--space-2);
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.template-rule-pill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-top: var(--space-4);
+}
+
+.rule-pill.template {
+  border-color: rgba(37, 99, 235, 0.22);
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
 }
 
 .detail-list div {

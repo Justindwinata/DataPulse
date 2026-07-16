@@ -237,6 +237,10 @@ function qualityBand(score: number | null | undefined): "high" | "medium" | "low
   return "low";
 }
 
+function ruleLabel(ruleCode: CleaningRuleCode): string {
+  return cleaningRules.find((rule) => rule.code === ruleCode)?.label ?? ruleCode;
+}
+
 function uniqueAffectedColumns(issues: DataQualityIssue[]): string[] {
   return Array.from(new Set(issues.flatMap((issue) => issue.affected_columns)));
 }
@@ -2411,7 +2415,13 @@ function App() {
                         <td>
                           <span className="count-chip">{template.selected_rules_count}</span>
                         </td>
-                        <td>{template.source_filename ?? "-"}</td>
+                        <td>
+                          {template.source_filename ? (
+                            <span className="source-chip">{template.source_filename}</span>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
                         <td>{formatDateTime(template.updated_at)}</td>
                         <td>
                           <div className="history-actions">
@@ -2446,6 +2456,27 @@ function App() {
                       <p>{selectedTemplate.storage_note}</p>
                     </div>
                     <span className="count-chip">{selectedTemplate.selected_rules_count} rules</span>
+                  </div>
+                  <div className="template-summary-grid" aria-label="Template summary">
+                    <article>
+                      <span>Source</span>
+                      <strong>{selectedTemplate.source_filename ?? "Manual template"}</strong>
+                    </article>
+                    <article>
+                      <span>Updated</span>
+                      <strong>{formatDateTime(selectedTemplate.updated_at)}</strong>
+                    </article>
+                    <article>
+                      <span>Rules</span>
+                      <strong>{selectedTemplate.selected_rules_count}</strong>
+                    </article>
+                  </div>
+                  <div className="template-rule-pill-list" aria-label="Selected template rules">
+                    {selectedTemplate.selected_rules.map((ruleCode) => (
+                      <span className="rule-pill template" key={ruleCode}>
+                        {ruleLabel(ruleCode)}
+                      </span>
+                    ))}
                   </div>
                   <form className="template-form-panel" onSubmit={handleSaveTemplateEdit}>
                     <label>
