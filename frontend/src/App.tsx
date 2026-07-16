@@ -134,6 +134,7 @@ const workflowStages: WorkflowStage[] = [
 ];
 
 const acceptedFormats = ".csv,.tsv,.txt,.xlsx,.xls";
+const supportedFormatLabels = ["CSV", "TSV", "TXT", "XLSX", "XLS"];
 const csvLikeExtensions = new Set(["csv", "tsv", "txt"]);
 const excelExtensions = new Set(["xlsx", "xls"]);
 const issueSeverityOrder: IssueSeverity[] = ["critical", "warning", "info"];
@@ -1092,9 +1093,9 @@ function App() {
 
       <section className="hero" aria-labelledby="product-title">
         <div className="hero-copy">
-          <p className="eyebrow">Local data preparation studio</p>
+          <p className="eyebrow">Deterministic data cleaning studio</p>
           <h1 id="product-title">DataPulse</h1>
-          <p className="subtitle">Clean messy CSV and Excel files with visible rules.</p>
+          <p className="subtitle">Transform messy tabular files into analysis-ready CSVs.</p>
           <p className="description">
             Validate a table-like file, inspect structure and quality issues, choose
             deterministic cleaning rules, preview changes, export CSV, and save local
@@ -1110,27 +1111,65 @@ function App() {
             <li>CSV-first export</li>
           </ul>
         </div>
-        <div className="status-panel" aria-label="Current foundation status">
-          <span className="status-label">Demo-ready scope</span>
-          <strong>Transparent cleaning from upload to report</strong>
+        <div className="product-preview" aria-label="DataPulse product preview">
+          <div className="preview-topline">
+            <span className="status-label">Quality center</span>
+            <strong>64 / 100</strong>
+          </div>
+          <div className="preview-score-bar" aria-hidden="true">
+            <span />
+          </div>
+          <div className="preview-table-visual" aria-hidden="true">
+            <span>transaction_id</span>
+            <span>item</span>
+            <span>total_spent</span>
+            <span className="warn-cell">ERROR</span>
+            <span>location</span>
+            <span className="info-cell">In-store</span>
+          </div>
+          <div className="preview-rule-stack">
+            <span>Recommended</span>
+            <strong>Normalize missing tokens</strong>
+            <strong>Clean numeric values</strong>
+            <strong>Recalculate line totals</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="home-showcase" aria-labelledby="home-showcase-title">
+        <div className="section-heading">
+          <p className="eyebrow">SaaS workflow, local-first boundary</p>
+          <h2 id="home-showcase-title">Built for transparent data preparation</h2>
           <p>
-            DataPulse keeps every transformation explicit: detect issues, select rules,
-            review effects, then export or document the result.
+            DataPulse looks and behaves like a serious cleaning workspace while keeping
+            the product boundary honest: no uploaded source-file storage, no AI claims,
+            no cloud sync, and CSV-first export.
           </p>
-          <dl className="status-metrics">
-            <div>
-              <dt>Formats</dt>
-              <dd>CSV, TSV, TXT, XLSX, XLS</dd>
-            </div>
-            <div>
-              <dt>Storage</dt>
-              <dd>Local metadata only</dd>
-            </div>
-            <div>
-              <dt>Output</dt>
-              <dd>CSV + HTML report</dd>
-            </div>
-          </dl>
+        </div>
+        <div className="format-grid" aria-label="Supported file formats">
+          {supportedFormatLabels.map((format) => (
+            <article key={format}>
+              <span>{format}</span>
+              <p>{format === "XLSX" || format === "XLS" ? "Values-only preview" : "Delimited table"}</p>
+            </article>
+          ))}
+        </div>
+        <div className="home-trust-grid">
+          <article>
+            <span className="status-label">Deterministic</span>
+            <h3>Rules over guesses</h3>
+            <p>Every change comes from a selected rule with visible before/after effects.</p>
+          </article>
+          <article>
+            <span className="status-label">CSV-first</span>
+            <h3>Clean values, not spreadsheet styling</h3>
+            <p>Excel inputs export selected sheet values as CSV. Formatting is not preserved.</p>
+          </article>
+          <article>
+            <span className="status-label">Metadata-first</span>
+            <h3>History without source-file storage</h3>
+            <p>Saved sessions and templates store summaries and rule sets locally in SQLite.</p>
+          </article>
         </div>
       </section>
 

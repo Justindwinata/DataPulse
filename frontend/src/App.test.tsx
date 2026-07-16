@@ -470,11 +470,11 @@ describe("App", () => {
 
     expect(screen.getByRole("heading", { name: "DataPulse" })).toBeInTheDocument();
     expect(
-      screen.getByText("Clean messy CSV and Excel files with visible rules."),
+      screen.getByText("Transform messy tabular files into analysis-ready CSVs."),
     ).toBeInTheDocument();
     expect(screen.getByText("Choose a tabular file")).toBeInTheDocument();
-    expect(screen.getByText("Rule-Based Cleaning")).toBeInTheDocument();
-    expect(screen.getByText("Cleaned CSV Export")).toBeInTheDocument();
+    expect(screen.getByText("Built for transparent data preparation")).toBeInTheDocument();
+    expect(screen.getByText("Rules over guesses")).toBeInTheDocument();
     expect(screen.queryByText(/restore file/i)).not.toBeInTheDocument();
   });
 

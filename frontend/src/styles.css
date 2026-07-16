@@ -183,6 +183,7 @@ p {
 }
 
 .hero,
+.home-showcase,
 .upload-workspace,
 .structure-workspace,
 .quality-workspace,
@@ -196,10 +197,10 @@ p {
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 500px);
   gap: var(--space-8);
-  align-items: end;
-  min-height: 420px;
+  align-items: center;
+  min-height: 560px;
   padding: 76px 0 34px;
 }
 
@@ -316,6 +317,7 @@ h2 {
 }
 
 .status-panel,
+.product-preview,
 .upload-panel,
 .result-panel,
 .structure-empty,
@@ -333,6 +335,149 @@ h2 {
 
 .status-panel {
   padding: var(--space-6);
+}
+
+.product-preview {
+  display: grid;
+  gap: var(--space-5);
+  padding: var(--space-5);
+}
+
+.preview-topline {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  align-items: center;
+}
+
+.preview-topline strong {
+  color: var(--color-danger);
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.preview-score-bar {
+  overflow: hidden;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+}
+
+.preview-score-bar span {
+  display: block;
+  width: 64%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-danger), var(--color-accent));
+}
+
+.preview-table-visual {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+}
+
+.preview-table-visual span {
+  min-height: 46px;
+  display: flex;
+  align-items: center;
+  border-right: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8rem;
+  padding: var(--space-3);
+}
+
+.preview-table-visual span:nth-child(3n) {
+  border-right: 0;
+}
+
+.preview-table-visual .warn-cell {
+  background: var(--color-danger-soft);
+  color: var(--color-danger);
+  font-weight: 850;
+}
+
+.preview-table-visual .info-cell {
+  background: var(--color-primary-soft);
+  color: var(--color-primary-strong);
+  font-weight: 850;
+}
+
+.preview-rule-stack {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.preview-rule-stack span {
+  color: var(--color-text-soft);
+  font-size: 0.76rem;
+  font-weight: 850;
+  text-transform: uppercase;
+}
+
+.preview-rule-stack strong {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-subtle);
+  color: var(--color-primary-strong);
+  font-size: 0.92rem;
+  padding: var(--space-3);
+}
+
+.home-showcase {
+  padding: var(--space-8) 0;
+}
+
+.format-grid,
+.home-trust-grid {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.format-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-bottom: var(--space-6);
+}
+
+.format-grid article,
+.home-trust-grid article {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-panel);
+  padding: var(--space-5);
+}
+
+.format-grid span {
+  display: inline-flex;
+  min-width: 56px;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  background: var(--color-primary);
+  color: var(--color-on-primary, #ffffff);
+  font-weight: 900;
+}
+
+.format-grid p,
+.home-trust-grid p {
+  margin: var(--space-3) 0 0;
+  line-height: 1.55;
+}
+
+.home-trust-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.home-trust-grid h3 {
+  margin: var(--space-3) 0 0;
+  font-size: 1.1rem;
 }
 
 .status-label {
@@ -391,6 +536,7 @@ h2 {
 }
 
 .upload-workspace,
+.home-showcase,
 .structure-workspace,
 .quality-workspace,
 .cleaning-workspace,
@@ -1320,6 +1466,7 @@ tbody td:first-child {
 
 @media (max-width: 768px) {
   .hero,
+  .home-showcase,
   .upload-workspace,
   .structure-workspace,
   .quality-workspace,
@@ -1331,6 +1478,8 @@ tbody td:first-child {
   }
 
   .summary-grid,
+  .format-grid,
+  .home-trust-grid,
   .rule-grid,
   .issue-card-grid,
   .history-header,
@@ -1427,6 +1576,7 @@ tbody td:first-child {
 
 @media (max-width: 360px) {
   .hero,
+  .home-showcase,
   .upload-workspace,
   .structure-workspace,
   .quality-workspace,
