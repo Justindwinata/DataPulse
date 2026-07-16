@@ -2054,6 +2054,7 @@ function App() {
                               View Detail
                             </button>
                             <button
+                              className="danger-action"
                               type="button"
                               disabled={isDeletingSessionId === session.id}
                               onClick={() => handleDeleteSession(session.id)}
@@ -2318,6 +2319,7 @@ function App() {
                               View/Edit
                             </button>
                             <button
+                              className="danger-action"
                               type="button"
                               disabled={isDeletingTemplateId === template.id}
                               onClick={() => handleDeleteTemplate(template.id)}
