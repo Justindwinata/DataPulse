@@ -2,6 +2,25 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.15.0 - Stitch UI Adoption and SaaS Platform Redesign
+
+### Added
+
+- Added `docs/STITCH_UI_ADOPTION_PLAN.md` documenting the inspected Stitch package, suitable concepts, rejected concepts, screen-to-product mapping, implementation plan, risks, and asset usage decision.
+- Added Stitch-inspired visual treatment for the DataPulse home, workspace, history, and templates surfaces.
+- Added SaaS-style score chips, file/type chips, rule-set pills, template summaries, and more polished local-history detail panels.
+
+### Changed
+
+- Updated the frontend design system around Stitch-inspired blue/slate tokens, tighter radii, dense data surfaces, stronger table treatments, and consistent focus states.
+- Reworked the app shell into a more product-like navigation experience for Home, Workspace, History, Templates, and report-related workflow surfaces.
+- Improved responsive and accessibility polish for narrow screens, scroll-safe tables, keyboard focus, and mobile navigation.
+
+### Not Included
+
+- No Stitch generated source package was committed. The ZIP was inspected and used as a reference only.
+- No deployment, authentication, cloud sync, AI/LLM cleaning, PDF export, XLSX export, or Excel formatting preservation was added.
+
 ## 0.14.0 - Professional UI Polish and Deploy Readiness
 
 ### Added

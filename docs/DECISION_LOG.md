@@ -123,3 +123,7 @@ Committed demo files use fictional CSV/TSV rows only. They demonstrate common me
 ## 2026-07-16 - Advanced Cleanup Rules Must Stay Conservative
 
 Targeted dirty-data hardening adds missing-token normalization, numeric cleanup, date cleanup, category text standardization, and recognized line-total recalculation as explicit user-selected rules. These rules do not impute missing values, guess arbitrary invalid values, or depend on a filename. Local `dataset/` files are ignored so real/manual QA datasets can remain outside the repository.
+
+## 2026-07-17 - Stitch Design Is A Visual Reference, Not Product Scope
+
+The supplied Stitch SaaS platform ZIP is used as a visual and UX reference for DataPulse's existing React frontend. DataPulse adopts the useful app shell, blue/slate visual system, dense dashboard cards, tables, workflow staging, history, and template patterns while rejecting generated artifacts, external CDN dependencies, fake account/admin/cloud surfaces, and any claims that are not implemented. Existing backend contracts and deterministic local workflows remain the product source of truth.

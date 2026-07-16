@@ -20,12 +20,15 @@ npm run dev
 
 Open the Vite URL, usually `http://127.0.0.1:5173`.
 
+Start on the redesigned Home view and briefly point out the Stitch-inspired app shell: Home, Workspace, History, Templates, and Reports navigation, the deterministic cleaning positioning, and the local-only scope notes.
+
 ## 2. Upload And Validate
 
-1. In the Workflow section, choose `demo/messy_sales.csv`.
-2. Click `Validate upload`.
-3. Explain that DataPulse validates extension, size, content type, and filename safety.
-4. Point out that uploaded files are not stored permanently.
+1. Use the primary Home CTA or navigation to jump to the Workspace section.
+2. In the Workspace upload panel, choose `demo/messy_sales.csv`.
+3. Click `Validate upload`.
+4. Explain that DataPulse validates extension, size, content type, and filename safety.
+5. Point out that uploaded files are not stored permanently.
 
 ## 3. Detect Structure
 

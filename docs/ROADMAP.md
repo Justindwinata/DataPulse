@@ -118,6 +118,15 @@ DataPulse will grow through small contracts so each stage remains reviewable, te
 - Validate behavior against local dirty datasets while keeping ad hoc `dataset/` files out of Git.
 - Status: implemented as generic hardening after DP-0013.
 
+## Stitch UI Adoption
+
+- Inspect the supplied Stitch SaaS platform design ZIP and document its fit for DataPulse.
+- Adopt the useful visual language without committing generated design artifacts.
+- Redesign the app shell, Home page, Workspace, History, and Templates surfaces around a professional SaaS data-tool layout.
+- Preserve existing validation, structure detection, quality profiling, cleaning, CSV export, HTML report, history, saved report replay, rule restore, and template workflows.
+- Keep product copy honest: deterministic cleaning, local-only metadata, CSV-first export, and no Excel formatting preservation.
+- Status: implemented as a frontend redesign and documentation milestone.
+
 ## Later Ideas
 
 - Template search, filtering, and import/export as portable JSON.

@@ -21,6 +21,8 @@ Use this checklist before recording a portfolio demo or pushing a milestone.
 
 ## Frontend Checks
 
+- Stitch-inspired app shell renders with Home, Workspace, History, Templates, and Reports navigation.
+- Home view states deterministic cleaning, local-only operation, supported formats, and CSV-first export clearly.
 - Navigation exposes Workflow, History, and Templates clearly.
 - Upload workspace explains supported formats and max size.
 - Empty states explain what the user should do next.
@@ -60,6 +62,8 @@ Expected result:
 - No page-level horizontal overflow.
 - Tables scroll inside their bordered containers.
 - Cards stack cleanly on narrow screens.
+- Side navigation becomes a compact horizontal navigation on tablet/mobile.
+- Quality chips, file chips, rule badges, and template pills remain readable.
 - Buttons remain readable and tappable.
 - The workflow, History, and Templates sections remain reachable.
 

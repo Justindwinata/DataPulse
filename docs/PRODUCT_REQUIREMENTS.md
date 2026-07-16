@@ -69,6 +69,7 @@ DP-0001 intentionally does not implement file upload, parsing, cleaning, CSV exp
 - DP-0011: saved rule set restore for applying prior rule selections to a newly uploaded file.
 - DP-0012: named workflow templates for saving, editing, applying, and deleting reusable cleaning rule sets.
 - DP-0013: product stabilization, UX polish, QA checklist, demo script, and portfolio demo materials.
+- Stitch UI adoption: SaaS platform-inspired redesign of Home, Workspace, History, and Templates using the supplied Stitch reference while preserving existing product scope.
 
 ## Cleaning Model
 
@@ -103,3 +104,5 @@ DP-0011 restores selected cleaning rule codes from saved sessions. Restored rule
 DP-0012 stores named workflow templates in local SQLite. Templates include a name, optional description, selected cleaning rules, optional source context, and timestamps. Users can create templates from the current workflow or saved session rules, edit template metadata and rules, delete templates, and apply a template to preselect rules for a newly uploaded file. Templates do not store original uploaded files, raw source data, cleaned CSV files, or anything that can process/export data without a fresh upload.
 
 DP-0013 prepares DataPulse for local portfolio demos. It improves navigation, workflow stage clarity, empty/loading/error copy, responsive behavior, focus visibility, QA documentation, and demo materials. It does not add major new product features and does not change the product boundaries around local-only operation, metadata-first persistence, CSV-first export, or deterministic rule-based cleaning.
+
+The Stitch UI adoption milestone improves visual presentation using a supplied SaaS platform design reference. It changes frontend layout and styling only: generated Stitch artifacts are not committed, no fake cloud/account/admin features are added, and the existing deterministic DataPulse workflows remain the functional source of truth.

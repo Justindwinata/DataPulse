@@ -2,7 +2,7 @@
 
 ## Overview
 
-DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0013 stabilizes the local portfolio demo experience while keeping uploaded source-file storage, raw source data storage, template-based reprocessing without a fresh upload, cloud sync, authentication, deployment, PDF export, and XLSX export out of scope.
+DataPulse is structured as a full-stack application with a FastAPI backend, local SQLite persistence, and a React frontend. DP-0013 stabilizes the local portfolio demo experience, and the Stitch UI adoption milestone applies a SaaS-style visual layer to the existing frontend without changing the backend contracts. Uploaded source-file storage, raw source data storage, template-based reprocessing without a fresh upload, cloud sync, authentication, deployment, PDF export, and XLSX export remain out of scope.
 
 ## Repository Layout
 
@@ -186,6 +186,8 @@ Current saved report replay rules:
 The frontend is a Vite React application written in TypeScript. The upload workspace supports validation, structure detection, Excel sheet selection, raw preview, quality analysis, restored/template rule banners, issue summary cards, rule selection cards, cleaned preview summaries, rule effects, cleaned CSV download, HTML report opening, saved session creation, template creation from current rules, and scroll-safe preview tables. The History section lists saved sessions, displays metadata-first detail, shows optional saved preview snapshots, supports saved HTML report replay, supports saved rule set restore, supports template creation from saved session rules, and supports local delete actions. The Templates section lists named templates, supports detail/edit, applies template rules to the current workflow, and deletes local template records.
 
 DP-0013 adds a small navigation layer for Workflow, History, and Templates; stage cards for the main workflow; clearer empty/loading/error states; keyboard-focusable table regions; and visible focus states for interactive controls.
+
+The Stitch UI adoption milestone adds a reference-driven visual system on top of the same React architecture. The adopted frontend patterns include a blue/slate SaaS palette, tighter cards, data-dense tables, product-like navigation, quality score chips, file/type chips, rule-set pills, workflow stage hierarchy, and improved mobile/focus states. Stitch-generated HTML, CDN links, unrelated enterprise/account surfaces, and fake feature claims are not copied into the app.
 
 ## Future Processing Flow
 

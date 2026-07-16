@@ -18,6 +18,7 @@ DataPulse is now prepared for local portfolio demos. It includes:
 - Local SQLite saved cleaning sessions
 - Saved-session HTML report replay
 - Saved rule restore and named workflow templates
+- Stitch-inspired SaaS platform UI across Home, Workspace, History, and Templates
 - Synthetic demo files in `demo/`
 - Demo script, QA checklist, and portfolio notes in `docs/`
 
@@ -217,6 +218,14 @@ Professional UI polish after DP-0013 improves deploy readiness and portfolio pre
 - Improves cleaning rule selection, history tables, template tables, empty states, loading states, and destructive action styling
 - Updates backend capabilities metadata so it reflects the implemented workflow
 - Adds safe environment examples and configurable backend CORS origins for future deployment planning
+
+Stitch UI adoption applies a supplied SaaS platform reference to the existing DataPulse frontend:
+
+- The Stitch ZIP was inspected and mapped in `docs/STITCH_UI_ADOPTION_PLAN.md`.
+- The generated package was used as design reference only; the unzipped package and generated artifacts are not committed.
+- Adopted concepts include blue/slate product branding, dense dashboard cards, scroll-safe tables, workflow stage hierarchy, SaaS navigation, rule-set panels, history summaries, and template library styling.
+- Rejected concepts include fake admin/account/cloud surfaces, external CDN dependencies, unrelated enterprise claims, and any copy that implies AI cleaning, cloud sync, deployment, PDF export, XLSX export, or Excel formatting preservation.
+- Existing upload, structure detection, quality profiling, cleaning preview, CSV export, HTML reports, local history, saved report replay, rule restore, and workflow template features remain the functional source of truth.
 
 ## Planned Product Flow
 
