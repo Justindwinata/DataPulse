@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,6 +16,16 @@ LOCAL_FRONTEND_ORIGINS = [
 ]
 
 
+def get_allowed_origins() -> list[str]:
+    configured_origins = os.getenv("DATAPULSE_CORS_ORIGINS", "")
+    origins = [
+        origin.strip()
+        for origin in configured_origins.split(",")
+        if origin.strip()
+    ]
+    return origins or LOCAL_FRONTEND_ORIGINS
+
+
 def create_app() -> FastAPI:
     app = FastAPI(
         title="DataPulse API",
@@ -22,7 +34,7 @@ def create_app() -> FastAPI:
     )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=LOCAL_FRONTEND_ORIGINS,
+        allow_origins=get_allowed_origins(),
         allow_credentials=False,
         allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
