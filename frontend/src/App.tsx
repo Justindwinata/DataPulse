@@ -66,6 +66,8 @@ type WorkflowStage = {
   description: string;
 };
 
+type StageState = "complete" | "active" | "pending";
+
 type RestoredRuleSet = {
   sessionId: number;
   sourceFilename: string;
@@ -1055,6 +1057,22 @@ function App() {
   const affectedColumns = qualityResult ? uniqueAffectedColumns(qualityResult.issues) : [];
   const detectedIssueCodes = new Set(qualityResult?.issues.map((issue) => issue.code) ?? []);
   const restoredRuleCodes = new Set(restoredRuleSet?.selectedRules ?? []);
+  const stageStateByStep: Record<string, StageState> = {
+    "01": selectedFile ? "complete" : "active",
+    "02": validationResult ? "complete" : selectedFile ? "active" : "pending",
+    "03": structureResult ? "complete" : canDetectStructure ? "active" : "pending",
+    "04": qualityResult
+      ? "complete"
+      : structureResult?.structure_status === "detected"
+        ? "active"
+        : "pending",
+    "05": cleaningResult
+      ? "complete"
+      : qualityResult?.quality_status === "profiled"
+        ? "active"
+        : "pending",
+    "06": cleaningResult?.cleaning_status === "preview_generated" ? "active" : "pending",
+  };
 
   return (
     <main className="app-shell">
@@ -1125,7 +1143,11 @@ function App() {
 
         <div className="stage-strip" aria-label="Workflow stages">
           {workflowStages.map((stage) => (
-            <article key={stage.step}>
+            <article
+              className={`stage-card ${stageStateByStep[stage.step]}`}
+              key={stage.step}
+              aria-label={`${stage.title}: ${stageStateByStep[stage.step]}`}
+            >
               <span>{stage.step}</span>
               <strong>{stage.title}</strong>
               <p>{stage.description}</p>
@@ -1660,16 +1682,26 @@ function App() {
               })}
             </div>
 
-            <button
-              className="secondary-action"
-              type="button"
-              disabled={isGeneratingCleaningPreview}
-              onClick={handleGenerateCleaningPreview}
-            >
-              {isGeneratingCleaningPreview
-                ? "Generating cleaned preview..."
-                : "Generate Cleaned Preview"}
-            </button>
+            <div className="rule-toolbar" aria-live="polite">
+              <div>
+                <span className="status-label">Rule selection</span>
+                <h3>{selectedRules.length} selected rules</h3>
+                <p>
+                  Recommended rules are based on detected issues. You can add or remove rules
+                  before generating the sample-based cleaned preview.
+                </p>
+              </div>
+              <button
+                className="secondary-action"
+                type="button"
+                disabled={isGeneratingCleaningPreview}
+                onClick={handleGenerateCleaningPreview}
+              >
+                {isGeneratingCleaningPreview
+                  ? "Generating cleaned preview..."
+                  : "Generate Cleaned Preview"}
+              </button>
+            </div>
 
             <form
               className="template-form-panel"
@@ -1966,10 +1998,13 @@ function App() {
           </div>
 
           {historySuccessMessage && (
-            <p className="export-status success">{historySuccessMessage}</p>
+            <p className="export-status success" role="status">{historySuccessMessage}</p>
           )}
           {historyErrorMessage && (
-            <p className="export-status error">{historyErrorMessage}</p>
+            <p className="export-status error" role="alert">{historyErrorMessage}</p>
+          )}
+          {isLoadingHistory && (
+            <p className="export-status info" role="status">Loading saved sessions...</p>
           )}
 
           {savedSessions.length === 0 ? (
@@ -2238,10 +2273,13 @@ function App() {
           </div>
 
           {templatesSuccessMessage && (
-            <p className="export-status success">{templatesSuccessMessage}</p>
+            <p className="export-status success" role="status">{templatesSuccessMessage}</p>
           )}
           {templatesErrorMessage && (
-            <p className="export-status error">{templatesErrorMessage}</p>
+            <p className="export-status error" role="alert">{templatesErrorMessage}</p>
+          )}
+          {isLoadingTemplates && (
+            <p className="export-status info" role="status">Loading workflow templates...</p>
           )}
 
           {templates.length === 0 ? (
