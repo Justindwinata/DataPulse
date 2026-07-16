@@ -830,6 +830,31 @@ textarea:focus-visible,
   line-height: 1;
 }
 
+.quality-score-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.quality-score-card strong {
+  color: var(--color-danger);
+  font-size: 2.35rem;
+}
+
+.quality-meter {
+  overflow: hidden;
+  height: 9px;
+  margin-top: var(--space-3);
+  border-radius: 999px;
+  background: var(--color-bg-subtle);
+}
+
+.quality-meter span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--color-danger), var(--color-accent), var(--color-success));
+}
+
 .summary-grid p {
   margin: var(--space-2) 0 0;
   line-height: 1.42;
@@ -932,6 +957,24 @@ textarea:focus-visible,
   padding: 0 var(--space-3);
 }
 
+.rules-engine-shell {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.rule-section {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.rule-section h3 {
+  margin: 0;
+  color: var(--color-text-soft);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
 .rule-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -948,6 +991,17 @@ textarea:focus-visible,
   background: var(--color-surface);
   padding: var(--space-4);
   cursor: pointer;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.rule-card:hover {
+  border-color: var(--color-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-elevated);
 }
 
 .rule-card:has(input:checked) {

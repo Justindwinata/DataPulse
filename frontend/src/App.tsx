@@ -1571,9 +1571,12 @@ function App() {
         {qualityResult && qualityResult.quality_status === "profiled" && (
           <div className="quality-result">
             <div className="summary-grid quality-summary">
-              <article>
+              <article className="quality-score-card">
                 <span>Quality score</span>
                 <strong>{qualityResult.quality_score}</strong>
+                <div className="quality-meter" aria-hidden="true">
+                  <span style={{ width: `${qualityResult.quality_score}%` }} />
+                </div>
                 <p>Heuristic sample score</p>
               </article>
               <article>
@@ -1622,7 +1625,7 @@ function App() {
                             )}
                             {issue.suggested_cleaning_rule && (
                               <p>
-                                <strong>Future rule:</strong> {issue.suggested_cleaning_rule}
+                                <strong>Suggested rule:</strong> {issue.suggested_cleaning_rule}
                               </p>
                             )}
                           </article>
@@ -1698,30 +1701,51 @@ function App() {
           </div>
 
           <div className="cleaning-result">
-            <div className="rule-grid" aria-label="Cleaning rule selection">
-              {cleaningRules.map((rule) => {
-                const isRecommended = rule.issueCodes.some((issueCode) =>
-                  detectedIssueCodes.has(issueCode),
-                );
-                const isRestored = restoredRuleCodes.has(rule.code);
-                const isTemplateRule =
-                  isRestored && restoredRuleSet?.sourceType === "template";
-                return (
-                  <label className="rule-card" key={rule.code}>
-                    <input
-                      type="checkbox"
-                      checked={selectedRules.includes(rule.code)}
-                      onChange={() => handleRuleToggle(rule.code)}
-                    />
-                    <span>
-                      <strong>{rule.label}</strong>
-                      {isRecommended && <em>Recommended</em>}
-                      {isTemplateRule ? <em>Template</em> : isRestored && <em>Restored</em>}
-                    </span>
-                    <p>{rule.description}</p>
-                  </label>
-                );
-              })}
+            <div className="rules-engine-shell" aria-label="Cleaning rule selection">
+              {[
+                {
+                  title: "Recommended fixes",
+                  rules: cleaningRules.filter((rule) =>
+                    rule.issueCodes.some((issueCode) => detectedIssueCodes.has(issueCode)),
+                  ),
+                },
+                {
+                  title: "Other available rules",
+                  rules: cleaningRules.filter(
+                    (rule) =>
+                      !rule.issueCodes.some((issueCode) => detectedIssueCodes.has(issueCode)),
+                  ),
+                },
+              ].map((group) => (
+                <div className="rule-section" key={group.title}>
+                  <h3>{group.title}</h3>
+                  <div className="rule-grid">
+                    {group.rules.map((rule) => {
+                      const isRecommended = rule.issueCodes.some((issueCode) =>
+                        detectedIssueCodes.has(issueCode),
+                      );
+                      const isRestored = restoredRuleCodes.has(rule.code);
+                      const isTemplateRule =
+                        isRestored && restoredRuleSet?.sourceType === "template";
+                      return (
+                        <label className="rule-card" key={rule.code}>
+                          <input
+                            type="checkbox"
+                            checked={selectedRules.includes(rule.code)}
+                            onChange={() => handleRuleToggle(rule.code)}
+                          />
+                          <span>
+                            <strong>{rule.label}</strong>
+                            {isRecommended && <em>Recommended</em>}
+                            {isTemplateRule ? <em>Template</em> : isRestored && <em>Restored</em>}
+                          </span>
+                          <p>{rule.description}</p>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="rule-toolbar" aria-live="polite">
