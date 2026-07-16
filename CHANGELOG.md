@@ -2,6 +2,29 @@
 
 All notable changes to DataPulse will be documented in this file.
 
+## 0.14.0 - Professional UI Polish and Deploy Readiness
+
+### Added
+
+- Added a documented UI redesign plan with professional data-tool references and DataPulse-specific adaptation notes.
+- Added a tokenized frontend design system for colors, typography, spacing, surfaces, buttons, forms, tables, focus states, and responsive breakpoints.
+- Added a branded app shell with clearer Workflow, History, and Templates navigation.
+- Added first-viewport product actions and honest local-only product boundary notes.
+- Added progress-aware workflow stage cards for upload, validation, structure detection, quality profiling, cleaning, and export/report/save.
+- Added clearer cleaning rule selection summary, loading status messages, secondary-page empty states, and destructive action styling.
+- Added `.env.example` with frontend API base URL and backend CORS origin settings.
+- Added backend support for `DATAPULSE_CORS_ORIGINS` while preserving localhost defaults.
+
+### Changed
+
+- Improved the upload, validation, structure preview, quality profile, cleaning preview, export, report, saved history, and template surfaces for a more professional SaaS-style demo.
+- Updated `/cleaning/capabilities` so metadata reflects the implemented workflow instead of the old foundation-only milestone.
+- Updated README screenshot guidance, local environment guidance, testing guidance, limitations, and deploy-readiness notes.
+
+### Not Included
+
+- Actual hosted deployment, authentication, cloud database, cloud sync, payment, AI/LLM cleaning, PDF export, XLSX export, or external integrations.
+
 ## 0.13.1 - Targeted Dirty Data Cleaning Hardening
 
 ### Added

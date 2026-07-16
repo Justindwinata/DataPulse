@@ -23,12 +23,13 @@ DataPulse is now prepared for local portfolio demos. It includes:
 
 ## Screenshots
 
-Screenshots are not committed yet. Recommended captures for GitHub/LinkedIn:
+Screenshots are not committed yet. Recommended captures for GitHub/LinkedIn after starting the local app:
 
-- Main workflow with upload validation and stage cards
-- Data quality issue summary
-- Cleaned preview and CSV export panel
-- HTML cleaning report
+- First viewport with product shell, workflow CTA, and local-only scope panel
+- Main workflow with upload validation and active stage cards
+- Structure preview table and data quality issue summary
+- Cleaning rule selection with selected-rule context and cleaned preview
+- CSV export, HTML report, and save-session panels
 - History detail with saved report replay
 - Templates library and apply workflow
 
@@ -207,6 +208,16 @@ Targeted dirty-data hardening after DP-0013 improves practical cleaning for mess
 
 Local ad hoc datasets in `dataset/` are ignored by Git. They can be used for manual QA without adding user data or large external files to the repository.
 
+Professional UI polish after DP-0013 improves deploy readiness and portfolio presentation:
+
+- Adds a calmer workflow-first app shell and branded navigation
+- Replaces milestone-heavy hero copy with clear product positioning and honest scope
+- Adds a tokenized frontend design system for color, spacing, radius, surfaces, tables, forms, buttons, and focus states
+- Adds progress-aware workflow stage cards
+- Improves cleaning rule selection, history tables, template tables, empty states, loading states, and destructive action styling
+- Updates backend capabilities metadata so it reflects the implemented workflow
+- Adds safe environment examples and configurable backend CORS origins for future deployment planning
+
 ## Planned Product Flow
 
 1. Upload a messy CSV, TSV, text table, or Excel file.
@@ -253,6 +264,8 @@ Local ad hoc datasets in `dataset/` are ignored by Git. They can be used for man
 
 Excel support focuses on table-like sheets. DataPulse does not preserve workbook formatting, formulas as formulas, charts, merged-cell behavior, macros, pivot tables, or presentation styling. Cleaned export remains CSV-first.
 
+DataPulse is deploy-ready in the sense that local build/test commands, environment variables, CORS configuration, ignored local data, and limitations are documented. It has not been deployed by this repository.
+
 ## Tech Stack
 
 - Backend: Python, FastAPI, Pydantic, Pytest
@@ -278,6 +291,12 @@ npm install
 
 ## Run Locally
 
+Optional environment setup:
+
+```bash
+cp .env.example .env
+```
+
 Backend API:
 
 ```bash
@@ -291,6 +310,10 @@ Frontend app:
 cd frontend
 npm run dev
 ```
+
+The frontend defaults to `http://127.0.0.1:8000` for API calls. For a different backend URL, set `VITE_API_BASE_URL` before running or building the frontend.
+
+The backend defaults CORS to `http://localhost:5173` and `http://127.0.0.1:5173`. For future hosted frontends, set `DATAPULSE_CORS_ORIGINS` to a comma-separated list of allowed origins.
 
 ## Demo Walkthrough
 
@@ -339,6 +362,12 @@ Run the full foundation check:
 
 ```bash
 make check
+```
+
+Whitespace check:
+
+```bash
+git diff --check
 ```
 
 ## API Foundation
@@ -463,4 +492,4 @@ POST /templates/from-session/{session_id}
 
 The templates API stores named reusable rule sets in local SQLite. Templates include a name, optional description, selected cleaning rules, optional source context, and timestamps. They do not store original files or raw data, and applying a template still requires a fresh upload before cleaning, export, or report generation.
 
-The capabilities endpoint is roadmap-oriented. It lists planned formats and cleaning rules while preserving honest implementation-status metadata.
+The capabilities endpoint reports supported formats, implemented workflow capabilities, implemented cleaning rule codes, planned rule concepts, export strategy, and current limitations.
